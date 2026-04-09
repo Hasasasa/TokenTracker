@@ -41,12 +41,19 @@ export function LeaderboardAvatar({
   const dim = SIZE_CLASS[size] || SIZE_CLASS.md;
   const hue = hashHue(seed ?? displayName ?? "");
   const safeUrl = typeof avatarUrl === "string" ? avatarUrl.trim() : "";
+  const [failed, setFailed] = React.useState(false);
 
-  if (safeUrl) {
+  React.useEffect(() => {
+    setFailed(false);
+  }, [safeUrl]);
+
+  if (safeUrl && !failed) {
     return (
       <img
         src={safeUrl}
         alt=""
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
         className={cn("rounded-full object-cover ring-1 ring-white/10", dim, className)}
       />
     );

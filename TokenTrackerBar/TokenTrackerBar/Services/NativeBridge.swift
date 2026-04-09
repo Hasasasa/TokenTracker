@@ -134,6 +134,20 @@ final class NativeBridge {
             if let url = URL(string: "https://github.com/mm7894215/TokenTracker") {
                 NSWorkspace.shared.open(url)
             }
+        case "openWidgetGallery":
+            // There is no public macOS API to open the Edit Widgets UI
+            // directly — neither NSWorkspace URL schemes nor AppKit expose
+            // the widget picker. The most honest + reliable response is a
+            // native alert that explains the two-step flow (right-click
+            // desktop → Edit Widgets → search TokenTracker).
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Add TokenTracker widgets"
+                alert.informativeText = "Right-click an empty area of your desktop, choose \"Edit Widgets\", then search for \"TokenTracker\" in the gallery."
+                alert.alertStyle = .informational
+                alert.addButton(withTitle: "Got it")
+                alert.runModal()
+            }
         case "quit":
             NSApp.terminate(nil)
         default:

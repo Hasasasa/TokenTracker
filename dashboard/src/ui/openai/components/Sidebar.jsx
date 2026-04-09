@@ -33,8 +33,14 @@ function getNavGroups() {
       items: [
         { id: "usage", to: "/dashboard", icon: BarChart3, label: copy("nav.usage") },
         { id: "limits", to: "/limits", icon: Gauge, label: copy("nav.limits") },
-        { id: "widgets", to: "/widgets", icon: LayoutGrid, label: copy("nav.widgets") },
         { id: "leaderboard", to: "/leaderboard", icon: Trophy, label: copy("nav.leaderboard") },
+      ],
+    },
+    {
+      id: "tools",
+      label: copy("nav.group.tools"),
+      items: [
+        { id: "widgets", to: "/widgets", icon: LayoutGrid, label: copy("nav.widgets") },
       ],
     },
     {
