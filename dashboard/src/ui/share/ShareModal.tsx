@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { copy } from "../../lib/copy";
 import { safeWriteClipboardImage } from "../../lib/safe-browser";
+// @ts-ignore — InsforgeAuthContext.jsx has no .d.ts
+import { useInsforgeAuth } from "../../contexts/InsforgeAuthContext.jsx";
 import {
   saveShareImageToDownloads,
   copyShareImageToClipboard,
@@ -13,8 +15,7 @@ import {
   blobToPngDataUrl,
 } from "./capture-share-card";
 // @ts-ignore — ShareCard.jsx has no .d.ts; the runtime shape is fine.
-import { ShareCard } from "./ShareCard.jsx";
-import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from "./share-card-constants";
+import { ShareCard, SHARE_VARIANTS, getVariantSize } from "./ShareCard.jsx";
 
 function isNativeEmbed(): boolean {
   if (typeof window === "undefined") return false;
@@ -22,7 +23,6 @@ function isNativeEmbed(): boolean {
 }
 
 const PREVIEW_MAX_WIDTH = 440;
-const PREVIEW_SCALE = PREVIEW_MAX_WIDTH / SHARE_CARD_WIDTH;
 
 type ToastKind = "info" | "success" | "error";
 type Toast = { id: number; kind: ToastKind; text: string };
@@ -68,8 +68,20 @@ function ActionButton({ onClick, disabled, children, emphasis, ariaLabel }: any)
 export function ShareModal({ open, onClose, data, twitterText }: any) {
   const [busy, setBusy] = useState<null | "x" | "copy" | "download">(null);
   const [handleOverride, setHandleOverride] = useState<string>("");
+  const [variant, setVariant] = useState<string>("annual-report");
   const cardRef = useRef<HTMLDivElement | null>(null);
   const { toast, push } = useToast();
+
+  // Grab avatar URL from auth context for share card
+  const insforge = useInsforgeAuth();
+  const avatarUrl = useMemo(() => {
+    const user = insforge?.user;
+    if (!user || typeof user !== "object") return null;
+    const meta = (user as any).user_metadata || {};
+    const prof = (user as any).profile || {};
+    const u = meta.avatar_url || meta.picture || prof.avatar_url || (user as any).avatar_url;
+    return typeof u === "string" && u.trim() ? u.trim() : null;
+  }, [insforge?.user]);
 
   // Reset state on open
   useEffect(() => {
@@ -78,8 +90,12 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
     setHandleOverride(data?.handle || "");
   }, [open, data?.handle]);
 
-  // Merge handle override into data for the card
-  const cardData = data ? { ...data, handle: handleOverride || data.handle } : data;
+  // Merge handle override + avatar into data for the card
+  const cardData = data ? { ...data, handle: handleOverride || data.handle, avatarUrl } : data;
+
+  // Variant-aware dimensions
+  const { width: cardW, height: cardH } = getVariantSize(variant);
+  const previewScale = PREVIEW_MAX_WIDTH / cardW;
 
   // ESC to close
   useEffect(() => {
@@ -218,7 +234,7 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      {/* Hidden render target for html-to-image — full 1200×1630.
+      {/* Hidden render target for html-to-image — variant-sized.
           Uses clip + opacity to hide visually while keeping the element
           in-layout so WKWebView actually paints it (off-screen positioning
           with left:-20000 causes WKWebView to skip rendering). */}
@@ -228,8 +244,8 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
           position: "fixed",
           left: 0,
           top: 0,
-          width: SHARE_CARD_WIDTH,
-          height: SHARE_CARD_HEIGHT,
+          width: cardW,
+          height: cardH,
           pointerEvents: "none",
           opacity: 0,
           zIndex: -1,
@@ -237,7 +253,7 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
           overflow: "hidden",
         }}
       >
-        <ShareCard ref={cardRef} data={cardData} />
+        <ShareCard ref={cardRef} data={cardData} variant={variant} />
       </div>
 
       <motion.div
@@ -252,8 +268,8 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
           <div className="flex-1 min-w-0 p-4 sm:p-7 bg-oai-gray-50 dark:bg-oai-gray-950 flex items-center justify-center overflow-auto">
             <div
               style={{
-                width: SHARE_CARD_WIDTH * PREVIEW_SCALE,
-                height: SHARE_CARD_HEIGHT * PREVIEW_SCALE,
+                width: cardW * previewScale,
+                height: cardH * previewScale,
                 flexShrink: 0,
                 position: "relative",
               }}
@@ -270,13 +286,13 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
               ) : null}
               <div
                 style={{
-                  width: SHARE_CARD_WIDTH,
-                  height: SHARE_CARD_HEIGHT,
-                  transform: `scale(${PREVIEW_SCALE})`,
+                  width: cardW,
+                  height: cardH,
+                  transform: `scale(${previewScale})`,
                   transformOrigin: "top left",
                 }}
               >
-                <ShareCard data={cardData} />
+                <ShareCard data={cardData} variant={variant} />
               </div>
             </div>
           </div>
@@ -329,6 +345,32 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
                 placeholder={copy("share.modal.name_placeholder")}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 text-oai-black dark:text-oai-white placeholder:text-oai-gray-400 dark:placeholder:text-oai-gray-600 focus:outline-none focus:ring-1 focus:ring-inset focus:ring-oai-brand transition-colors"
               />
+            </div>
+
+            {/* Variant selector */}
+            <div>
+              <label
+                className="text-[11px] tracking-[0.18em] uppercase text-oai-gray-500 dark:text-oai-gray-400 mb-1.5 block"
+              >
+                Style
+              </label>
+              <div className="flex gap-2">
+                {(SHARE_VARIANTS as { id: string; label: string }[]).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setVariant(v.id)}
+                    className={[
+                      "flex-1 px-3 py-2 text-sm rounded-lg border transition-colors",
+                      variant === v.id
+                        ? "border-oai-black dark:border-oai-white bg-white dark:bg-oai-gray-900 text-oai-black dark:text-oai-white font-medium"
+                        : "border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 text-oai-gray-500 dark:text-oai-gray-400 hover:border-oai-gray-400 dark:hover:border-oai-gray-600",
+                    ].join(" ")}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Actions */}

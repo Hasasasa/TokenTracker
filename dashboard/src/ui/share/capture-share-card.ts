@@ -1,4 +1,5 @@
 import { SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from "./share-card-constants";
+// Note: SHARE_CARD_WIDTH/HEIGHT are kept as fallbacks; actual size is read from the node.
 
 const FONT_CSS_HREF =
   "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap";
@@ -52,14 +53,18 @@ export async function captureShareCard(
   const { toBlob, toPng } = await import("html-to-image");
   const pixelRatio = options.pixelRatio ?? 2;
 
+  // Read actual size from the node (supports variant-specific dimensions)
+  const w = node.offsetWidth || SHARE_CARD_WIDTH;
+  const h = node.offsetHeight || SHARE_CARD_HEIGHT;
+
   const htmlToImageOptions = {
     pixelRatio,
     cacheBust: true,
-    width: SHARE_CARD_WIDTH,
-    height: SHARE_CARD_HEIGHT,
+    width: w,
+    height: h,
     style: {
-      width: `${SHARE_CARD_WIDTH}px`,
-      height: `${SHARE_CARD_HEIGHT}px`,
+      width: `${w}px`,
+      height: `${h}px`,
     },
     skipFonts: false,
     filter: (n: any) =>

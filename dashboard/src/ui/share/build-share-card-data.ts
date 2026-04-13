@@ -14,6 +14,7 @@ export interface ShareCardModel {
 export interface ShareCardHeatmapCell {
   day: string;
   level: number;
+  value?: number;
   future: boolean;
 }
 
@@ -65,9 +66,12 @@ function normalizeHeatmap(raw: any): {
         totalDays += 1;
         if (level > 0) activeDays += 1;
       }
+      const rawValue = cell?.billable_total_tokens ?? cell?.total_tokens ?? cell?.value ?? 0;
+      const value = Number.isFinite(rawValue) ? Math.max(0, rawValue) : 0;
       return {
         day: typeof cell?.day === "string" ? cell.day : "",
         level,
+        value,
         future,
       };
     });
