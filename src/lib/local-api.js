@@ -134,12 +134,26 @@ function readQueueData(queuePath) {
   }
 }
 
-function aggregateByDay(rows) {
+function rowDayKey(row, timeZoneContext) {
+  const hs = row.hour_start;
+  if (!hs) return "";
+  if (
+    timeZoneContext &&
+    (timeZoneContext.timeZone || Number.isFinite(timeZoneContext.offsetMinutes))
+  ) {
+    const parts = getZonedParts(new Date(hs), timeZoneContext);
+    const key = formatPartsDayKey(parts);
+    if (key) return key;
+  }
+  return hs.slice(0, 10);
+}
+
+function aggregateByDay(rows, timeZoneContext = null) {
   const byDay = new Map();
   for (const row of rows) {
-    const hs = row.hour_start;
-    if (!hs) continue;
-    const day = hs.slice(0, 10);
+    if (!row.hour_start) continue;
+    const day = rowDayKey(row, timeZoneContext);
+    if (!day) continue;
     if (!byDay.has(day)) {
       byDay.set(day, {
         day,
@@ -674,8 +688,9 @@ function createLocalApiHandler({ queuePath }) {
     if (p === "/functions/tokentracker-usage-summary") {
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
+      const timeZoneContext = getTimeZoneContext(url);
       const rows = readQueueData(qp);
-      const daily = aggregateByDay(rows).filter((d) => d.day >= from && d.day <= to);
+      const daily = aggregateByDay(rows, timeZoneContext).filter((d) => d.day >= from && d.day <= to);
       const totals = daily.reduce(
         (acc, r) => {
           acc.total_tokens += r.total_tokens;
@@ -693,16 +708,19 @@ function createLocalApiHandler({ queuePath }) {
       );
       const totalCost = totals.total_cost_usd;
 
-      const today = new Date();
-      const todayStr = today.toISOString().slice(0, 10);
-      const allDaily = aggregateByDay(rows);
+      const todayParts = getZonedParts(new Date(), timeZoneContext);
+      const todayStr = formatPartsDayKey(todayParts) || new Date().toISOString().slice(0, 10);
+      const allDaily = aggregateByDay(rows, timeZoneContext);
 
+      const shiftDay = (dayStr, delta) => {
+        const d = new Date(`${dayStr}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() + delta);
+        return d.toISOString().slice(0, 10);
+      };
       const collectDays = (n) => {
         const out = [];
         for (let i = n - 1; i >= 0; i--) {
-          const d = new Date(today);
-          d.setUTCDate(d.getUTCDate() - i);
-          const ds = d.toISOString().slice(0, 10);
+          const ds = shiftDay(todayStr, -i);
           const dd = allDaily.find((x) => x.day === ds);
           if (dd) out.push(dd);
         }
@@ -719,17 +737,15 @@ function createLocalApiHandler({ queuePath }) {
       const l30 = collectDays(30);
       const l7t = sumDays(l7);
       const l30t = sumDays(l30);
-      const l7from = new Date(today);
-      l7from.setUTCDate(l7from.getUTCDate() - 6);
-      const l30from = new Date(today);
-      l30from.setUTCDate(l30from.getUTCDate() - 29);
+      const l7fromStr = shiftDay(todayStr, -6);
+      const l30fromStr = shiftDay(todayStr, -29);
 
       json(res, {
         from, to, days: daily.length,
         totals: { ...totals, total_cost_usd: totalCost.toFixed(6) },
         rolling: {
-          last_7d: { from: l7from.toISOString().slice(0, 10), to: todayStr, active_days: l7.length, totals: l7t },
-          last_30d: { from: l30from.toISOString().slice(0, 10), to: todayStr, active_days: l30.length, totals: l30t, avg_per_active_day: l30.length > 0 ? Math.round(l30t.billable_total_tokens / l30.length) : 0 },
+          last_7d: { from: l7fromStr, to: todayStr, active_days: l7.length, totals: l7t },
+          last_30d: { from: l30fromStr, to: todayStr, active_days: l30.length, totals: l30t, avg_per_active_day: l30.length > 0 ? Math.round(l30t.billable_total_tokens / l30.length) : 0 },
         },
       });
       return true;
@@ -739,8 +755,9 @@ function createLocalApiHandler({ queuePath }) {
     if (p === "/functions/tokentracker-usage-daily") {
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
+      const timeZoneContext = getTimeZoneContext(url);
       const rows = readQueueData(qp);
-      const daily = aggregateByDay(rows).filter((d) => d.day >= from && d.day <= to);
+      const daily = aggregateByDay(rows, timeZoneContext).filter((d) => d.day >= from && d.day <= to);
       json(res, { from, to, data: daily });
       return true;
     }
@@ -748,10 +765,12 @@ function createLocalApiHandler({ queuePath }) {
     // --- usage-heatmap ---
     if (p === "/functions/tokentracker-usage-heatmap") {
       const weeks = parseInt(url.searchParams.get("weeks") || "52", 10);
+      const timeZoneContext = getTimeZoneContext(url);
       const rows = readQueueData(qp);
-      const daily = aggregateByDay(rows);
-      const today = new Date();
-      const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+      const daily = aggregateByDay(rows, timeZoneContext);
+      const todayParts = getZonedParts(new Date(), timeZoneContext);
+      const todayStr = formatPartsDayKey(todayParts) || new Date().toISOString().slice(0, 10);
+      const end = new Date(`${todayStr}T00:00:00Z`);
       const start = new Date(end);
       start.setUTCDate(start.getUTCDate() - weeks * 7 + 1);
       const from = start.toISOString().slice(0, 10);
@@ -792,9 +811,10 @@ function createLocalApiHandler({ queuePath }) {
     if (p === "/functions/tokentracker-usage-model-breakdown") {
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
+      const timeZoneContext = getTimeZoneContext(url);
       const rows = readQueueData(qp).filter((r) => {
         if (!r.hour_start) return false;
-        const d = r.hour_start.slice(0, 10);
+        const d = rowDayKey(r, timeZoneContext);
         return d >= from && d <= to;
       });
 
@@ -911,12 +931,13 @@ function createLocalApiHandler({ queuePath }) {
     if (p === "/functions/tokentracker-usage-monthly") {
       const from = url.searchParams.get("from") || "";
       const to = url.searchParams.get("to") || "";
+      const timeZoneContext = getTimeZoneContext(url);
       const rows = readQueueData(qp);
       const byMonth = new Map();
       for (const row of rows) {
         if (!row.hour_start) continue;
-        const day = row.hour_start.slice(0, 10);
-        if (day < from || day > to) continue;
+        const day = rowDayKey(row, timeZoneContext);
+        if (!day || day < from || day > to) continue;
         const month = day.slice(0, 7);
         if (!byMonth.has(month))
           byMonth.set(month, { month, total_tokens: 0, billable_total_tokens: 0, input_tokens: 0, output_tokens: 0, cached_input_tokens: 0, cache_creation_input_tokens: 0, reasoning_output_tokens: 0, conversation_count: 0 });
