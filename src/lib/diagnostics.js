@@ -131,7 +131,7 @@ async function collectTrackerDiagnostics({
       ide_present: kiroIdePresent,
       cli_present: kiroCliPresent,
       cli_approximation:
-        "Kiro CLI does not persist explicit token counts; tokens are approximated at 4 chars/token from user_prompt_length and response_size in the conversations_v2 SQLite table. Model names are suffixed '~approx' in model-breakdown.",
+        "Kiro CLI does not persist explicit token counts (billing is credit-based on Bedrock). Tokens are approximated at 4 chars/token from user prompt chars and assistant response chars. Source rows that came through this path have model='kiro-cli-agent' when the underlying model is unknown (auto-routing); known Bedrock ARNs canonicalize to their short name (e.g. claude-sonnet-4).",
       merge_policy:
         "Kiro IDE and Kiro CLI both emit source='kiro' in queue.jsonl so token, cost, heatmap, and leaderboard aggregations merge transparently. Use this block to distinguish sub-path contributions.",
     },

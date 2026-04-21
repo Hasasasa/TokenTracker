@@ -3107,14 +3107,31 @@ function resolveKiroCliSessionFiles(env = process.env) {
   return files;
 }
 
-// Build a { message_id -> content-char-count } map from a .jsonl sibling
-// file. Lets us approximate per-turn tokens when the live session's
-// user_turn_metadatas.input_token_count / output_token_count fields are 0
-// (kiro-cli 0.x doesn't always populate them). Char chunks come from:
-//   Prompt.data.content[].data          (user input)
-//   AssistantMessage.data.content[].data (assistant text/toolUse)
-function readKiroCliMessageChars(jsonlPath) {
-  const result = { byMessage: new Map(), messageKind: new Map() };
+// Build char-count maps from a .jsonl sibling file. Lets us approximate
+// per-turn tokens when the live session's input_token_count /
+// output_token_count fields are 0 (kiro-cli does not persist real token
+// counts; billing is credit-based).
+//
+// Returns:
+//   byMessage:       message_id -> assistant+toolUse char count
+//   messageKind:     message_id -> jsonl event kind
+//   turnPromptChars: turn_index -> input chars attributed to that turn
+//
+// Input attribution: Kiro CLI's turn.message_ids only records
+// AssistantMessage / ToolResults ids, NEVER the user Prompt id. So the
+// Prompt event is invisible if you look it up by message_id. To recover
+// the per-turn user input, we walk the jsonl in timestamp order and buffer
+// Prompt chars until the next AssistantMessage that belongs to a turn
+// (turnMessageIds provides that mapping). The first such AssistantMessage
+// "claims" the buffered Prompt chars for its turn, and the buffer resets.
+// Later cycles within the same turn (Assistant → ToolResults → Assistant)
+// do not re-attribute.
+function readKiroCliMessageChars(jsonlPath, turnMessageIds) {
+  const result = {
+    byMessage: new Map(),
+    messageKind: new Map(),
+    turnPromptChars: new Map(),
+  };
   if (!jsonlPath || !fssync.existsSync(jsonlPath)) return result;
   let raw;
   try {
@@ -3122,6 +3139,10 @@ function readKiroCliMessageChars(jsonlPath) {
   } catch {
     return result;
   }
+  const midToTurn =
+    turnMessageIds instanceof Map ? turnMessageIds : new Map();
+  const attributedTurns = new Set();
+  let pendingPromptChars = 0;
   for (const line of raw.split("\n")) {
     if (!line.trim()) continue;
     let evt;
@@ -3151,6 +3172,17 @@ function readKiroCliMessageChars(jsonlPath) {
     }
     result.byMessage.set(mid, (result.byMessage.get(mid) || 0) + chars);
     if (!result.messageKind.has(mid)) result.messageKind.set(mid, evt.kind);
+
+    if (evt.kind === "Prompt") {
+      pendingPromptChars += chars;
+    } else if (evt.kind === "AssistantMessage" && midToTurn.has(mid)) {
+      const turnIdx = midToTurn.get(mid);
+      if (!attributedTurns.has(turnIdx)) {
+        result.turnPromptChars.set(turnIdx, pendingPromptChars);
+        attributedTurns.add(turnIdx);
+        pendingPromptChars = 0;
+      }
+    }
   }
   return result;
 }
@@ -3182,12 +3214,26 @@ function readKiroCliSessionTurns(jsonPath) {
   const sessionId =
     typeof parsed.session_id === "string" ? parsed.session_id : path.basename(jsonPath, ".json");
 
+  // Build turn_index -> Set(message_id) so the jsonl walker can attribute
+  // orphaned Prompt events (not referenced by turn.message_ids) to the
+  // right turn. The turn.message_ids list only contains AssistantMessage
+  // and ToolResults ids; Prompt ids appear in the jsonl stream only.
+  const turnMessageIds = new Map();
+  for (let i = 0; i < turns.length; i++) {
+    const t = turns[i];
+    if (!t || !Array.isArray(t.message_ids)) continue;
+    for (const mid of t.message_ids) {
+      if (typeof mid === "string" && mid) turnMessageIds.set(mid, i);
+    }
+  }
+
   // Load sibling .jsonl for char-count fallback.
   const jsonlPath = jsonPath.replace(/\.json$/, ".jsonl");
-  const charMap = readKiroCliMessageChars(jsonlPath);
+  const charMap = readKiroCliMessageChars(jsonlPath, turnMessageIds);
 
   const flat = [];
-  for (const turn of turns) {
+  for (let turnIdx = 0; turnIdx < turns.length; turnIdx++) {
+    const turn = turns[turnIdx];
     if (!turn || typeof turn !== "object") continue;
     const loopRand =
       (turn.loop_id && (turn.loop_id.rand ?? turn.loop_id.seed)) || null;
@@ -3199,16 +3245,17 @@ function readKiroCliSessionTurns(jsonPath) {
     let inputTokens = toNonNegativeInt(turn.input_token_count);
     let outputTokens = toNonNegativeInt(turn.output_token_count);
 
-    if (inputTokens === 0 && outputTokens === 0 && messageIds.length > 0) {
-      // Fall back to char-count approximation. Prompt events count toward
-      // input; AssistantMessage events count toward output.
-      let promptChars = 0;
+    if (inputTokens === 0 && outputTokens === 0) {
+      // Fall back to char-count approximation. Input chars come from the
+      // sequential Prompt attribution (see readKiroCliMessageChars);
+      // output chars come from AssistantMessage+toolUse bodies referenced
+      // by turn.message_ids.
+      const promptChars = charMap.turnPromptChars.get(turnIdx) || 0;
       let assistantChars = 0;
       for (const mid of messageIds) {
         const chars = charMap.byMessage.get(mid) || 0;
         const kind = charMap.messageKind.get(mid);
-        if (kind === "Prompt") promptChars += chars;
-        else assistantChars += chars;
+        if (kind === "AssistantMessage") assistantChars += chars;
       }
       inputTokens = Math.floor(promptChars / KIRO_CLI_CHARS_PER_TOKEN);
       outputTokens = Math.floor(assistantChars / KIRO_CLI_CHARS_PER_TOKEN);
@@ -3240,13 +3287,20 @@ function readKiroCliSessionTurns(jsonPath) {
 //   anthropic.claude-sonnet-4-20250514-v1:0  -> claude-sonnet-4
 //   claude-opus-4.6                           -> claude-opus-4.6
 //   claude-sonnet-4.5                         -> claude-sonnet-4.5
-//   auto                                      -> auto
+//   auto                                      -> null (caller uses 'kiro-cli-agent')
 //   <unknown/falsy>                           -> null (caller falls back to 'kiro-cli-agent')
+//
+// "auto" is treated as unknown because Kiro CLI's auto-routing does not
+// expose the underlying Bedrock model id in the session file. Returning
+// null lets pricing fall into the kiro-cli-agent bucket (sonnet-4 rates)
+// rather than the literal "auto" string which matches Cursor's composer-1
+// pricing by accident.
 function canonicalizeKiroCliModelId(raw) {
   if (!raw || typeof raw !== "string") return null;
   let name = raw.trim();
   if (!name) return null;
   name = name.toLowerCase();
+  if (name === "auto") return null;
   // Strip provider prefix (anthropic., aws., openai., or a full Bedrock ARN).
   name = name.replace(
     /^(?:arn:aws:bedrock:[^:]*:[^:]*:(?:foundation-model\/)?|anthropic\.|openai\.|aws\.)/,

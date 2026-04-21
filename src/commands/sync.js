@@ -362,16 +362,17 @@ async function cmdSync(argv) {
       });
     }
 
-    // ── Kiro CLI (reads ~/Library/Application Support/kiro-cli/data.sqlite3) ──
+    // ── Kiro CLI (reads ~/Library/Application Support/kiro-cli/data.sqlite3
+    //    AND live sessions under ~/.kiro/sessions/cli/{uuid}.json) ──
     // Runs IN PARALLEL with the Kiro IDE branch above — NOT instead of it.
     // Both emit source='kiro' so totals merge transparently; cursor state
     // is isolated in cursors.kiroCli. Kiro CLI does not persist explicit
-    // token counts; we approximate from user_prompt_length / response_size
-    // at 4 chars/token and mark the model '<model>~approx' so the
-    // approximation is visible in model-breakdown.
+    // token counts (billing is credit-based on Bedrock); we approximate at
+    // 4 chars/token from user prompt chars and assistant response chars.
     let kiroCliResult = { recordsProcessed: 0, eventsAggregated: 0, bucketsQueued: 0 };
     const kiroCliDb = resolveKiroCliDbPath(process.env);
-    if (fssync.existsSync(kiroCliDb)) {
+    const kiroCliSessionFiles = resolveKiroCliSessionFiles(process.env);
+    if (fssync.existsSync(kiroCliDb) || kiroCliSessionFiles.length > 0) {
       if (progress?.enabled) {
         progress.start(`Parsing Kiro CLI ${renderBar(0)} | buckets 0`);
       }

@@ -2667,7 +2667,12 @@ test("parseKiroCliIncremental produces zero buckets for empty user_turn_metadata
   }
 });
 
-test("resolveKiroCliSessionFiles skips files with an active .lock sibling", async () => {
+test("resolveKiroCliSessionFiles includes both completed and live (.lock) sessions", async () => {
+  // Live tracking is the design intent: we want the user's current
+  // session to appear in sync output without waiting for kiro-cli to
+  // exit. Kiro CLI rewrites .json atomically per turn flush, and
+  // parseKiroCliIncremental's fingerprint-based subtract-old/add-new
+  // logic handles subsequent mutations safely.
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "tt-kirocli-"));
   try {
     const sessionsDir = path.join(tmp, "sessions", "cli");
@@ -2684,8 +2689,9 @@ test("resolveKiroCliSessionFiles skips files with an active .lock sibling", asyn
     );
 
     const files = rolloutModule.resolveKiroCliSessionFiles({ KIRO_HOME: tmp });
-    assert.equal(files.length, 1, "only the unlocked session must be returned");
-    assert.ok(files[0].endsWith("done-0000.json"));
+    assert.equal(files.length, 2, "both completed and live sessions must be returned");
+    const names = files.map((f) => path.basename(f)).sort();
+    assert.deepEqual(names, ["done-0000.json", "live-0000.json"]);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -2710,7 +2716,10 @@ test("parseKiroCliIncremental canonicalizes Bedrock model IDs and re-buckets on 
   try {
     const dbPath = path.join(tmp, "data.sqlite3");
     const queuePath = path.join(tmp, "queue.jsonl");
-    const env = { KIRO_CLI_DB_PATH: dbPath };
+    // KIRO_HOME must point at an empty tmp root so resolveKiroCliSessionFiles
+    // does not pick up the developer's real ~/.kiro/sessions/cli/ contents
+    // and contaminate this test.
+    const env = { KIRO_CLI_DB_PATH: dbPath, KIRO_HOME: tmp };
 
     // One conversation with one request: Bedrock ARN-style model id, small
     // prompt/response.
