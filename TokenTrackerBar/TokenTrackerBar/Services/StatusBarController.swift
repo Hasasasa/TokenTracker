@@ -173,11 +173,11 @@ final class StatusBarController: NSObject {
             .font: valueFont,
             .foregroundColor: valueColor,
         ])
-        let tokenLabel = NSAttributedString(string: "TOKEN", attributes: [
+        let tokenLabel = NSAttributedString(string: Strings.menuTokenLabel, attributes: [
             .font: labelFont,
             .foregroundColor: labelColor,
         ])
-        let costLabel = NSAttributedString(string: "COST", attributes: [
+        let costLabel = NSAttributedString(string: Strings.menuCostLabel, attributes: [
             .font: labelFont,
             .foregroundColor: labelColor,
         ])
@@ -344,20 +344,20 @@ final class StatusBarController: NSObject {
         // Star on GitHub — only visible to users who actively open the menu,
         // so it's not a "promotional" intrusion. Sits next to About by
         // convention (users scan that region for project links).
-        let starItem = NSMenuItem(title: "★ Star on GitHub", action: #selector(openGitHub), keyEquivalent: "")
+        let starItem = NSMenuItem(title: Strings.menuStarOnGitHub, action: #selector(openGitHub), keyEquivalent: "")
         starItem.target = self
         menu.addItem(starItem)
 
         menu.addItem(.separator())
 
         // Show Stats in Menu Bar (toggle)
-        let statsItem = NSMenuItem(title: "Show Stats in Menu Bar", action: #selector(toggleStats), keyEquivalent: "")
+        let statsItem = NSMenuItem(title: Strings.menuShowStats, action: #selector(toggleStats), keyEquivalent: "")
         statsItem.target = self
         statsItem.state = showStats ? .on : .off
         menu.addItem(statsItem)
 
         // Animated Icon (toggle)
-        let animItem = NSMenuItem(title: "Animated Icon", action: #selector(toggleAnimation), keyEquivalent: "")
+        let animItem = NSMenuItem(title: Strings.menuAnimatedIcon, action: #selector(toggleAnimation), keyEquivalent: "")
         animItem.target = self
         animItem.state = (animator?.isEnabled ?? true) ? .on : .off
         menu.addItem(animItem)
@@ -442,7 +442,7 @@ final class StatusBarController: NSObject {
         }
 
         let formatted = TokenFormatter.formatCompact(tokens)
-        return "\(Strings.todayTitle): \(formatted) tokens · \(cost)"
+        return "\(Strings.todayTitle)：\(formatted) \(Strings.tokensUnit) · \(cost)"
     }
 
     private func applyUpdateMenuItemState(in menu: NSMenu) {

@@ -566,3 +566,79 @@ share.toast.copied,share,DashboardPage,ShareModal,toast_copied,"Image copied to 
 share.toast.downloaded,share,DashboardPage,ShareModal,toast_downloaded,"Image saved",,active
 share.toast.failed,share,DashboardPage,ShareModal,toast_failed,"Couldn't generate image",,active
 share.toast.working,share,DashboardPage,ShareModal,toast_working,"Generating…",,active
+share.modal.style_label,share,DashboardPage,ShareModal,style_label,"Style",,active
+share.variant.neon,share,DashboardPage,ShareModal,variant_neon,"Neon",,active
+share.variant.broadsheet,share,DashboardPage,ShareModal,variant_broadsheet,"Broadsheet",,active
+share.date.month_year,share,DashboardPage,ShareCard,date_month_year,"{{month}} {{year}}",,active
+share.issue.all_time,share,DashboardPage,ShareCard,issue_all_time,"ALL TIME",,active
+share.month_short.jan,share,DashboardPage,ShareCard,month_short,"JAN",,active
+share.month_short.feb,share,DashboardPage,ShareCard,month_short,"FEB",,active
+share.month_short.mar,share,DashboardPage,ShareCard,month_short,"MAR",,active
+share.month_short.apr,share,DashboardPage,ShareCard,month_short,"APR",,active
+share.month_short.may,share,DashboardPage,ShareCard,month_short,"MAY",,active
+share.month_short.jun,share,DashboardPage,ShareCard,month_short,"JUN",,active
+share.month_short.jul,share,DashboardPage,ShareCard,month_short,"JUL",,active
+share.month_short.aug,share,DashboardPage,ShareCard,month_short,"AUG",,active
+share.month_short.sep,share,DashboardPage,ShareCard,month_short,"SEP",,active
+share.month_short.oct,share,DashboardPage,ShareCard,month_short,"OCT",,active
+share.month_short.nov,share,DashboardPage,ShareCard,month_short,"NOV",,active
+share.month_short.dec,share,DashboardPage,ShareCard,month_short,"DEC",,active
+share.hook.top_loyal,share,DashboardPage,ShareCard,hook_top_loyal,"{{percent}}% loyal to {{name}}.",,active
+share.hook.days_record,share,DashboardPage,ShareCard,hook_days_record,"{{days}} days on the record.",,active
+share.hook.top_led,share,DashboardPage,ShareCard,hook_top_led,"Led by {{name}} ({{percent}}%).",,active
+share.hook.multi_models,share,DashboardPage,ShareCard,hook_multi_models,"Across {{count}} models, {{days}} days.",,active
+share.hook.days_with_model,share,DashboardPage,ShareCard,hook_days_with_model,"{{days}} days with {{name}}.",,active
+share.hook.new_chapter,share,DashboardPage,ShareCard,hook_new_chapter,"The beginning of a new chapter.",,active
+share.card.broadsheet.issue,share,DashboardPage,BroadsheetCard,issue_label,"Issue",,active
+share.card.broadsheet.by,share,DashboardPage,BroadsheetCard,by_label,"By",,active
+share.card.broadsheet.tracked_since,share,DashboardPage,BroadsheetCard,tracked_since,"Tracked since",,active
+share.card.broadsheet.total_tokens,share,DashboardPage,BroadsheetCard,total_tokens,"Total tokens",,active
+share.card.broadsheet.estimated_spend,share,DashboardPage,BroadsheetCard,estimated_spend,"Estimated spend",,active
+share.card.broadsheet.billable_days,share,DashboardPage,BroadsheetCard,billable_days,"{{days}} billable days",,active
+share.card.broadsheet.heatmap_title,share,DashboardPage,BroadsheetCard,heatmap_title,"The Year in Print",,active
+share.card.broadsheet.heatmap_days_on_record,share,DashboardPage,BroadsheetCard,heatmap_days,"{{active}} / {{total}} days on record",,active
+share.card.broadsheet.roster_title,share,DashboardPage,BroadsheetCard,roster_title,"The Roster",,active
+share.card.broadsheet.roster_subtitle,share,DashboardPage,BroadsheetCard,roster_subtitle,"Models in regular rotation",,active
+share.card.broadsheet.empty,share,DashboardPage,BroadsheetCard,empty,"An empty week — the press was quiet.",,active
+share.card.broadsheet.global_rank,share,DashboardPage,BroadsheetCard,global_rank,"Global rank",,active
+share.card.broadsheet.active_days,share,DashboardPage,BroadsheetCard,active_days,"Active",,active
+share.card.broadsheet.days_count,share,DashboardPage,BroadsheetCard,days_count,"{{days}} days",,active
+share.card.broadsheet.track_yours,share,DashboardPage,BroadsheetCard,track_yours,"Track yours",,active
+share.card.annual.report_title,share,DashboardPage,AnnualReportCard,report_title,"Token Report",,active
+share.card.annual.less,share,DashboardPage,AnnualReportCard,legend_less,"Less",,active
+share.card.annual.more,share,DashboardPage,AnnualReportCard,legend_more,"More",,active
+share.card.annual.heatmap_title,share,DashboardPage,AnnualReportCard,heatmap_title,"TOKEN USAGE HEATMAP",,active
+share.card.annual.total_tokens,share,DashboardPage,AnnualReportCard,total_tokens,"Total Tokens",,active
+share.card.annual.estimated_cost,share,DashboardPage,AnnualReportCard,estimated_cost,"Estimated Cost",,active
+share.card.annual.longest_streak,share,DashboardPage,AnnualReportCard,longest_streak,"Longest Streak",,active
+share.card.annual.days_count,share,DashboardPage,AnnualReportCard,days_count,"{{days}} days",,active
+share.card.annual.top_model,share,DashboardPage,AnnualReportCard,top_model,"Top Model",,active
+usage.period.day,ui,DashboardPage,UsageOverview,period_day,"Day",,active
+usage.period.week,ui,DashboardPage,UsageOverview,period_week,"Week",,active
+usage.period.month,ui,DashboardPage,UsageOverview,period_month,"Month",,active
+usage.period.total,ui,DashboardPage,UsageOverview,period_total,"Total",,active
+usage.period.custom,ui,DashboardPage,UsageOverview,period_custom,"Custom",,active
+usage.overview.tablist_aria,ui,DashboardPage,UsageOverview,tablist_aria,"Time period",,active
+usage.overview.cost_breakdown_aria,ui,DashboardPage,UsageOverview,cost_breakdown_aria,"View cost breakdown",,active
+usage.overview.distribution_aria,ui,DashboardPage,UsageOverview,distribution_aria,"Provider distribution: {{items}}",,active
+usage.overview.distribution_item,ui,DashboardPage,UsageOverview,distribution_item,"{{label}} {{percent}}%",,active
+usage.overview.provider_card_aria,ui,DashboardPage,UsageOverview,provider_card_aria,"{{provider}}: {{percent}}%, {{tokens}} tokens, {{cost}}. Click to {{action}} details",,active
+usage.overview.expand,ui,DashboardPage,UsageOverview,expand,"expand",,active
+usage.overview.collapse,ui,DashboardPage,UsageOverview,collapse,"collapse",,active
+usage.overview.model_count,ui,DashboardPage,UsageOverview,model_count,"{{count}} models",,active
+usage.overview.model_details_aria,ui,DashboardPage,UsageOverview,model_details_aria,"{{provider}} model details",,active
+limits.panel.title,ui,LimitsPage,UsageLimitsPanel,title,"Usage Limits",,active
+limits.label.cursor_plan,ui,LimitsPage,UsageLimitsPanel,cursor_plan,"Plan",,active
+limits.label.cursor_auto,ui,LimitsPage,UsageLimitsPanel,cursor_auto,"Auto",,active
+limits.label.cursor_api,ui,LimitsPage,UsageLimitsPanel,cursor_api,"API",,active
+limits.label.kiro_month,ui,LimitsPage,UsageLimitsPanel,kiro_month,"Month",,active
+limits.label.kiro_bonus,ui,LimitsPage,UsageLimitsPanel,kiro_bonus,"Bonus",,active
+limits.label.copilot_premium,ui,LimitsPage,UsageLimitsPanel,copilot_premium,"Premium",,active
+limits.label.copilot_chat,ui,LimitsPage,UsageLimitsPanel,copilot_chat,"Chat",,active
+shared.time.now,shared,*,Shared,time_now,"now",,active
+nav.ip_check,shared,*,Sidebar,nav_ip_check,Claude IP Check,,active
+settings.appearance.language.label,ui,SettingsPage,SettingsPage,language_label,Language,,active
+settings.appearance.language.hint,ui,SettingsPage,SettingsPage,language_hint,Use System to follow your computer language by default.,,active
+settings.appearance.language.system,ui,SettingsPage,SettingsPage,language_system,System,,active
+settings.appearance.language.english,ui,SettingsPage,SettingsPage,language_english,English,,active
+settings.appearance.language.chinese,ui,SettingsPage,SettingsPage,language_chinese,Simplified Chinese,,active

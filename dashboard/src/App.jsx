@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
+import { LocaleProvider } from "./ui/foundation/LocaleProvider.jsx";
 import { ThemeProvider } from "./ui/foundation/ThemeProvider.jsx";
 import { useInsforgeAuth } from "./contexts/InsforgeAuthContext.jsx";
 import { LoginModalProvider } from "./contexts/LoginModalContext.jsx";
@@ -17,41 +18,23 @@ import { NativeAuthCallbackPage } from "./pages/NativeAuthCallbackPage.jsx";
 import { AppLayout } from "./ui/openai/components/Sidebar.jsx";
 
 const DashboardPage = React.lazy(() =>
-  import("./pages/DashboardPage.jsx").then((mod) => ({
-    default: mod.DashboardPage,
-  })),
+  import("./pages/DashboardPage.jsx").then((mod) => ({ default: mod.DashboardPage })),
 );
-
 const LeaderboardPage = React.lazy(() =>
-  import("./pages/LeaderboardPage.jsx").then((mod) => ({
-    default: mod.LeaderboardPage,
-  })),
+  import("./pages/LeaderboardPage.jsx").then((mod) => ({ default: mod.LeaderboardPage })),
 );
-
 const LeaderboardProfilePage = React.lazy(() =>
-  import("./pages/LeaderboardProfilePage.jsx").then((mod) => ({
-    default: mod.LeaderboardProfilePage,
-  })),
+  import("./pages/LeaderboardProfilePage.jsx").then((mod) => ({ default: mod.LeaderboardProfilePage })),
 );
-
 const LimitsPage = React.lazy(() =>
-  import("./pages/LimitsPage.jsx").then((mod) => ({
-    default: mod.LimitsPage,
-  })),
+  import("./pages/LimitsPage.jsx").then((mod) => ({ default: mod.LimitsPage })),
 );
-
 const SettingsPage = React.lazy(() =>
-  import("./pages/SettingsPage.jsx").then((mod) => ({
-    default: mod.SettingsPage,
-  })),
+  import("./pages/SettingsPage.jsx").then((mod) => ({ default: mod.SettingsPage })),
 );
-
 const WidgetsPage = React.lazy(() =>
-  import("./pages/WidgetsPage.jsx").then((mod) => ({
-    default: mod.WidgetsPage,
-  })),
+  import("./pages/WidgetsPage.jsx").then((mod) => ({ default: mod.WidgetsPage })),
 );
-
 const IpCheckPage = React.lazy(() => import("./pages/IpCheckPage.jsx"));
 
 export default function App() {
@@ -82,8 +65,7 @@ export default function App() {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const leaderboardProfileMatch = normalizedPath.match(/^\/leaderboard\/u\/([^/]+)$/i);
   const leaderboardProfileUserId = leaderboardProfileMatch ? leaderboardProfileMatch[1] : null;
-  const isLeaderboardPath =
-    normalizedPath === "/leaderboard" || Boolean(leaderboardProfileUserId);
+  const isLeaderboardPath = normalizedPath === "/leaderboard" || Boolean(leaderboardProfileUserId);
 
   const cloudAuthSignedIn = Boolean(insforge.enabled && insforge.signedIn);
   const signedIn = isLocalMode || cloudAuthSignedIn;
@@ -97,34 +79,18 @@ export default function App() {
       name: insforge.displayName || "",
       userId: insforge.user?.id || null,
     };
-  }, [insforge, cloudAuthSignedIn]);
+  }, [cloudAuthSignedIn, insforge]);
 
   let gate = isLocalMode || mockEnabled || screenshotMode ? "dashboard" : "landing";
-  if (normalizedPath === "/landing") {
-    gate = "landing";
-  }
-  if (normalizedPath === "/dashboard") {
-    gate = "dashboard";
-  }
-  if (isLeaderboardPath) {
-    gate = "dashboard";
-  }
+  if (normalizedPath === "/landing") gate = "landing";
+  if (normalizedPath === "/dashboard") gate = "dashboard";
+  if (isLeaderboardPath) gate = "dashboard";
+
   const isLimitsPath = normalizedPath === "/limits";
-  if (isLimitsPath) {
-    gate = "dashboard";
-  }
   const isSettingsPath = normalizedPath === "/settings";
-  if (isSettingsPath) {
-    gate = "dashboard";
-  }
   const isWidgetsPath = normalizedPath === "/widgets";
-  if (isWidgetsPath) {
-    gate = "dashboard";
-  }
   const isIpCheckPath = normalizedPath === "/ip-check";
-  if (isIpCheckPath) {
-    gate = "dashboard";
-  }
+  if (isLimitsPath || isSettingsPath || isWidgetsPath || isIpCheckPath) gate = "dashboard";
 
   const PageComponent = leaderboardProfileUserId
     ? LeaderboardProfilePage
@@ -140,10 +106,6 @@ export default function App() {
               ? IpCheckPage
               : DashboardPage;
 
-  // /leaderboard/u/:id (LeaderboardProfilePage) still ships its own
-  // min-h-screen + sticky header/footer chrome, so it must NOT be wrapped
-  // in AppLayout — that would double-stack the nav and break scrolling.
-  // Only the index /leaderboard route is migrated to AppLayout for now.
   const isLeaderboardIndexPath = normalizedPath === "/leaderboard";
   const showSidebar =
     !publicMode &&
@@ -163,9 +125,7 @@ export default function App() {
   } else if (normalizedPath === "/login") {
     content = <LoginPage />;
   } else if (gate === "landing") {
-    content = (
-      <LandingPage signInUrl="/login" signUpUrl="/login" />
-    );
+    content = <LandingPage signInUrl="/login" signUpUrl="/login" />;
   } else {
     const pageNode = (
       <Suspense fallback={loadingShell}>
@@ -188,14 +148,16 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <LoginModalProvider>
-          {content}
-          <LoginModal />
-          <Analytics />
-          <SpeedInsights />
-        </LoginModalProvider>
-      </ThemeProvider>
+      <LocaleProvider>
+        <ThemeProvider>
+          <LoginModalProvider>
+            {content}
+            <LoginModal />
+            <Analytics />
+            <SpeedInsights />
+          </LoginModalProvider>
+        </ThemeProvider>
+      </LocaleProvider>
     </ErrorBoundary>
   );
 }

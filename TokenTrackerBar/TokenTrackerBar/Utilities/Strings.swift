@@ -12,7 +12,6 @@ enum Strings {
     static let quitButton = "Quit"
     static let justNow = "just now"
     static let activityTitle = "Activity"
-    static let activeDaysSuffix = "active days"
     static let trendTitle = "Trend"
     static let topModelsTitle = "Models"
     static let modelBreakdownTitle = "Model Breakdown"
@@ -33,11 +32,27 @@ enum Strings {
     // Usage Limits
     static let usageLimitsTitle = "Limits"
     static let sessionExpired = "Session expired"
+    static let allProvidersHidden = "All providers hidden"
+    static let cursorPlanLabel = "Plan"
+    static let cursorAutoLabel = "Auto"
+    static let kiroMonthLabel = "Month"
+    static let syncingUsageData = "Syncing usage data…"
+    static let syncingFirstLaunchHint = "First launch may take a moment"
+    static let limitsDisplayTitle = "Limit Display"
 
     // Menu items
     static let menuSyncNow = "Sync Now"
     static let menuCheckForUpdates = "Check for Updates…"
     static let menuLaunchAtLogin = "Launch at Login"
+    static let menuStarOnGitHub = "★ Star on GitHub"
+    static let menuShowStats = "Show Stats in Menu Bar"
+    static let menuAnimatedIcon = "Animated Icon"
+    static let menuTokenLabel = "Tokens"
+    static let menuCostLabel = "Cost"
+    static let tokensUnit = "tokens"
+    static let heatmapLegendLess = "Less"
+    static let heatmapLegendMore = "More"
+    static let trendAccessibilityLabel = "Token usage trend chart"
 
     static func minutesAgo(_ n: Int) -> String { "\(n)m ago" }
     static func hoursAgo(_ n: Int) -> String { "\(n)h ago" }

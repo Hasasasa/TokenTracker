@@ -8,7 +8,7 @@ function formatReset(isoOrUnix) {
   const ts = typeof isoOrUnix === "number" ? isoOrUnix * 1000 : Date.parse(isoOrUnix);
   if (!Number.isFinite(ts)) return null;
   const diff = ts - Date.now();
-  if (diff <= 0) return "now";
+  if (diff <= 0) return copy("shared.time.now");
   const m = Math.floor(diff / 60000);
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
@@ -89,9 +89,9 @@ function renderProviderGroup(id, data) {
     case "cursor":
       return (
         <ToolGroup key="cursor" name="Cursor" icon="/brand-logos/cursor.svg">
-          {data.primary_window ? <LimitBar label="Plan" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="Auto" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
-          {data.tertiary_window ? <LimitBar label="API" pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.cursor_plan")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.cursor_auto")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.tertiary_window ? <LimitBar label={copy("limits.label.cursor_api")} pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
         </ToolGroup>
       );
     case "gemini":
@@ -105,8 +105,8 @@ function renderProviderGroup(id, data) {
     case "kiro":
       return (
         <ToolGroup key="kiro" name="Kiro" icon="/brand-logos/kiro.svg">
-          {data.primary_window ? <LimitBar label="Month" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="Bonus" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.kiro_month")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.kiro_bonus")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
         </ToolGroup>
       );
     case "antigravity":
@@ -120,8 +120,8 @@ function renderProviderGroup(id, data) {
     case "copilot":
       return (
         <ToolGroup key="copilot" name="GitHub Copilot" icon="/brand-logos/copilot.svg">
-          {data.primary_window ? <LimitBar label="Premium" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="Chat" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.copilot_premium")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.copilot_chat")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
           {data.otel_has_files || data.otel_enabled ? null : <CopilotOtelHint defaultDir={data.otel_default_dir} />}
         </ToolGroup>
       );
@@ -178,7 +178,7 @@ export function UsageLimitsPanel({ claude, codex, cursor, gemini, kiro, antigrav
     <FadeIn delay={0.15}>
       <Card>
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">Usage Limits</h3>
+          <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">{copy("limits.panel.title")}</h3>
           {groups}
         </div>
       </Card>

@@ -34,7 +34,7 @@ struct UsageLimitsView: View {
 
                 if visibleGroups.isEmpty {
                     // All hidden by user — show hint so they know gear exists
-                    Text("All providers hidden")
+                    Text(Strings.allProvidersHidden)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 } else {
@@ -140,10 +140,10 @@ struct UsageLimitsView: View {
     private func cursorContent(_ cursor: CursorLimits) -> some View {
         VStack(spacing: 4) {
             if let w = cursor.primaryWindow {
-                limitRow(label: "Plan", pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Cursor")
+                limitRow(label: Strings.cursorPlanLabel, pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Cursor")
             }
             if let w = cursor.secondaryWindow {
-                limitRow(label: "Auto", pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Cursor")
+                limitRow(label: Strings.cursorAutoLabel, pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Cursor")
             }
             if let w = cursor.tertiaryWindow {
                 limitRow(label: "API", pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Cursor")
@@ -172,7 +172,7 @@ struct UsageLimitsView: View {
     private func kiroContent(_ kiro: KiroLimits) -> some View {
         VStack(spacing: 4) {
             if let w = kiro.primaryWindow {
-                limitRow(label: "Month", pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Kiro")
+                limitRow(label: Strings.kiroMonthLabel, pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Kiro")
             }
             if let w = kiro.secondaryWindow {
                 limitRow(label: "Bonus", pct: w.usedPercent, reset: relativeReset(iso: w.resetAt), toolName: "Kiro")

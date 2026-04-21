@@ -15,7 +15,12 @@ import {
   blobToPngDataUrl,
 } from "./capture-share-card";
 // @ts-ignore — ShareCard.jsx has no .d.ts; the runtime shape is fine.
-import { ShareCard, SHARE_VARIANTS, getVariantSize } from "./ShareCard.jsx";
+import {
+  ShareCard,
+  SHARE_VARIANTS,
+  getShareVariantLabel,
+  getVariantSize,
+} from "./ShareCard.jsx";
 
 function isNativeEmbed(): boolean {
   if (typeof window === "undefined") return false;
@@ -352,10 +357,10 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
               <label
                 className="text-[11px] tracking-[0.18em] uppercase text-oai-gray-500 dark:text-oai-gray-400 mb-1.5 block"
               >
-                Style
+                {copy("share.modal.style_label")}
               </label>
               <div className="flex gap-2">
-                {(SHARE_VARIANTS as { id: string; label: string }[]).map((v) => (
+                {(SHARE_VARIANTS as { id: string; labelKey?: string }[]).map((v) => (
                   <button
                     key={v.id}
                     type="button"
@@ -367,7 +372,7 @@ export function ShareModal({ open, onClose, data, twitterText }: any) {
                         : "border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 text-oai-gray-500 dark:text-oai-gray-400 hover:border-oai-gray-400 dark:hover:border-oai-gray-600",
                     ].join(" ")}
                   >
-                    {v.label}
+                    {getShareVariantLabel(v.id)}
                   </button>
                 ))}
               </div>

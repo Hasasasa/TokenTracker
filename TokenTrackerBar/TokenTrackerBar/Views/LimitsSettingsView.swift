@@ -8,7 +8,7 @@ struct LimitsSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Limits Display")
+            Text(Strings.limitsDisplayTitle)
                 .font(.system(.headline, design: .default))
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
