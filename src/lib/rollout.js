@@ -3005,13 +3005,17 @@ async function parseKiroIncremental({ dbPath, jsonlPath, cursors, queuePath, onP
 // Hermes Agent — SQLite-based (sessions table in ~/.hermes/state.db)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function resolveHermesPath() {
+function resolveHermesPath(env = process.env) {
+  const override = env.TOKENTRACKER_HERMES_HOME;
+  if (typeof override === "string" && override.trim().length > 0) {
+    return override.trim();
+  }
   const home = require("node:os").homedir();
   return path.join(home, ".hermes");
 }
 
-function resolveHermesDbPath() {
-  return path.join(resolveHermesPath(), "state.db");
+function resolveHermesDbPath(env = process.env) {
+  return path.join(resolveHermesPath(env), "state.db");
 }
 
 function resolveAllHermesDBPaths({ hermesPath, dbPath } = {}) {
