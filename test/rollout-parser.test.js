@@ -12,6 +12,8 @@ const {
   parseOpencodeIncremental,
   parseKiroIncremental,
   parseHermesIncremental,
+  resolveHermesPath,
+  resolveHermesDbPath,
   parseCopilotIncremental,
   parseKimiIncremental,
   parseCodebuddyIncremental,
@@ -2873,6 +2875,48 @@ test("parseHermesIncremental re-reads cursor timestamp sessions so same-second i
     const queued = await readJsonLines(queuePath);
     assert.ok(queued.some((b) => b.source === "hermes" && b.model === "gpt-5.4-mini" && b.input_tokens === 1300 && b.output_tokens === 650));
   } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test("resolveHermesPath honors TOKENTRACKER_HERMES_HOME override", () => {
+  const override = "/tmp/tokentracker-hermes-override";
+  assert.equal(resolveHermesPath({ TOKENTRACKER_HERMES_HOME: override }), override);
+  assert.equal(
+    resolveHermesDbPath({ TOKENTRACKER_HERMES_HOME: override }),
+    path.join(override, "state.db"),
+  );
+  // Falls back to ~/.hermes when override is empty or absent.
+  const fallback = resolveHermesPath({ TOKENTRACKER_HERMES_HOME: "  " });
+  assert.equal(fallback, path.join(os.homedir(), ".hermes"));
+  assert.equal(resolveHermesPath({}), path.join(os.homedir(), ".hermes"));
+});
+
+test("parseHermesIncremental reads a database under TOKENTRACKER_HERMES_HOME override", async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "tt-hermes-env-override-"));
+  const prev = process.env.TOKENTRACKER_HERMES_HOME;
+  try {
+    const queuePath = path.join(tmp, "queue.jsonl");
+    const cursors = { version: 1 };
+    const dbPath = path.join(tmp, "state.db");
+    const epoch = 1775993779.0;
+    createHermesDb(dbPath, [
+      { id: "envoverride_session", model: "gpt-5.4-mini", started_at: epoch, ended_at: epoch + 120, input_tokens: 800, output_tokens: 200, message_count: 2 },
+    ]);
+
+    process.env.TOKENTRACKER_HERMES_HOME = tmp;
+    const hermesPath = resolveHermesPath();
+    assert.equal(hermesPath, tmp);
+
+    const result = await parseHermesIncremental({ hermesPath, cursors, queuePath });
+    assert.equal(result.recordsProcessed, 1);
+    assert.equal(result.eventsAggregated, 1);
+
+    const queued = await readJsonLines(queuePath);
+    assert.ok(queued.some((b) => b.source === "hermes" && b.input_tokens === 800 && b.output_tokens === 200));
+  } finally {
+    if (prev === undefined) delete process.env.TOKENTRACKER_HERMES_HOME;
+    else process.env.TOKENTRACKER_HERMES_HOME = prev;
     await fs.rm(tmp, { recursive: true, force: true });
   }
 });
