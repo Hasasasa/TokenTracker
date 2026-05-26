@@ -78,3 +78,7 @@ Thumbs.db
 .eslintcache
 .parcel-cache
 .turbo
+
+# Private launch playbook — never push to remote
+docs/launch/PLAYBOOK.md
+docs/launch/submit-awesome-pr.sh
