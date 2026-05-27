@@ -174,7 +174,7 @@ test("TrendMonitor root does not force full height", () => {
   );
   assert.ok(src.includes("export function TrendMonitor"), "expected TrendMonitor component");
   const lines = src.split("\n");
-  const rootLine = lines.find((line) => line.includes("className={`rounded-xl"));
+  const rootLine = lines.find((line) => line.includes('"rounded-xl border border-oai-gray-200'));
   assert.ok(rootLine, "expected TrendMonitor root className line");
   assert.ok(!rootLine.includes("h-full"), "expected TrendMonitor root to avoid h-full");
 });

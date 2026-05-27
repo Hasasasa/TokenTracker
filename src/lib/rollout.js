@@ -5699,7 +5699,7 @@ function resolveDroidSessionsDirs(env = process.env) {
   if (typeof env.FACTORY_DIR === "string" && env.FACTORY_DIR.trim()) {
     return [path.join(expandHomePath(env.FACTORY_DIR.trim(), env), "sessions")];
   }
-  const home = env.HOME || os.homedir();
+  const home = env.HOME || require("node:os").homedir();
   return [path.join(home, ".factory", "sessions")];
 }
 
