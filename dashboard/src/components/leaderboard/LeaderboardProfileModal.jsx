@@ -479,7 +479,7 @@ export function ProfileContent({ data, currency, rate, onClose, variant = "modal
         {heatmapData && (
           <section className="border-t border-oai-gray-200/70 dark:border-oai-gray-800/60 pt-5">
             <SectionLabel>{copy("leaderboard.profile_modal.heatmap.title")}</SectionLabel>
-            <div className="overflow-x-auto oai-scrollbar -mx-1 px-1">
+            <div className="min-w-0">
               <ActivityHeatmap heatmap={heatmapData} hideLegend embedded />
             </div>
           </section>

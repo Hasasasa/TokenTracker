@@ -434,7 +434,11 @@ export function ActivityHeatmap({
     );
   }
 
-  const gridCols = LABEL_WIDTH + weeks.length * CELL_SIZE + Math.max(0, weeks.length - 1) * CELL_GAP;
+  const cellSize = embedded ? 10 : CELL_SIZE;
+  const colGap = embedded ? 2 : CELL_GAP;
+  const labelWidth = embedded ? 22 : LABEL_WIDTH;
+  const gridCols = labelWidth + weeks.length * cellSize + Math.max(0, weeks.length - 1) * colGap;
+  const weekColTemplate = `${labelWidth}px repeat(${weeks.length}, ${cellSize}px)`;
 
   return (
     <div
@@ -522,8 +526,8 @@ export function ActivityHeatmap({
           <div
             className="grid text-[10px] uppercase text-oai-gray-400 dark:text-oai-gray-400 mb-1"
             style={{
-              gridTemplateColumns: `${LABEL_WIDTH}px repeat(${weeks.length}, ${CELL_SIZE}px)`,
-              columnGap: CELL_GAP,
+              gridTemplateColumns: weekColTemplate,
+              columnGap: colGap,
             }}
           >
             <span />
@@ -538,14 +542,14 @@ export function ActivityHeatmap({
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `${LABEL_WIDTH}px repeat(${weeks.length}, ${CELL_SIZE}px)`,
-              columnGap: CELL_GAP,
+              gridTemplateColumns: weekColTemplate,
+              columnGap: colGap,
             }}
           >
             {/* Day labels */}
             <div
               className="grid text-[10px] text-oai-gray-400 dark:text-oai-gray-400 sticky left-0 bg-white dark:bg-oai-gray-900 pr-2"
-              style={{ gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`, rowGap: CELL_GAP }}
+              style={{ gridTemplateRows: `repeat(7, ${cellSize}px)`, rowGap: colGap }}
             >
               {dayLabels.map((l) => (
                 <span key={l} className="leading-none">
@@ -559,8 +563,8 @@ export function ActivityHeatmap({
               className="grid"
               style={{
                 gridAutoFlow: "column",
-                gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
-                gap: CELL_GAP,
+                gridTemplateRows: `repeat(7, ${cellSize}px)`,
+                gap: colGap,
               }}
             >
               {weeks.map((week, wi) =>
@@ -575,7 +579,7 @@ export function ActivityHeatmap({
                       onMouseEnter={(e) => handleCellMouseEnter(e, cell)}
                       onMouseLeave={handleCellMouseLeave}
                       className="rounded-[2px] transition-transform hover:scale-125 hover:z-10 cursor-pointer"
-                      style={{ width: CELL_SIZE, height: CELL_SIZE, background: color }}
+                      style={{ width: cellSize, height: cellSize, background: color }}
                     />
                   );
                 })
