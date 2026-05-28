@@ -12,6 +12,7 @@ import { LeaderboardAvatar } from "../LeaderboardAvatar.jsx";
 import { ProviderIcon } from "../../ui/dashboard/components/ProviderIcon.jsx";
 import { ActivityHeatmap } from "../../ui/dashboard/components/ActivityHeatmap.jsx";
 import { cn } from "../../lib/cn";
+import { isNativeApp } from "../../lib/native-bridge.js";
 
 function formatCost(value, currency, rate) {
   const n = Number(value);
@@ -493,14 +494,27 @@ export function ProfileContent({ data, currency, rate, onClose, variant = "modal
         {/* Modal mode only: link to the standalone shareable profile page. */}
         {onClose && user?.user_id && (
           <div className="border-t border-oai-gray-200/70 dark:border-oai-gray-800/60 pt-4">
-            <Link
-              to={`/u/${user.user_id}`}
-              onClick={onClose}
-              className="inline-flex items-center gap-1 text-xs text-oai-gray-500 hover:text-oai-gray-900 dark:text-oai-gray-400 dark:hover:text-oai-gray-100 transition-colors"
-            >
-              <span>{copy("leaderboard.profile_modal.view_full")}</span>
-              <ArrowUpRight size={12} strokeWidth={2} aria-hidden />
-            </Link>
+            {isNativeApp() ? (
+              <a
+                href={`https://www.tokentracker.cc/u/${user.user_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="inline-flex items-center gap-1 text-xs text-oai-gray-500 hover:text-oai-gray-900 dark:text-oai-gray-400 dark:hover:text-oai-gray-100 transition-colors"
+              >
+                <span>{copy("leaderboard.profile_modal.view_full")}</span>
+                <ArrowUpRight size={12} strokeWidth={2} aria-hidden />
+              </a>
+            ) : (
+              <Link
+                to={`/u/${user.user_id}`}
+                onClick={onClose}
+                className="inline-flex items-center gap-1 text-xs text-oai-gray-500 hover:text-oai-gray-900 dark:text-oai-gray-400 dark:hover:text-oai-gray-100 transition-colors"
+              >
+                <span>{copy("leaderboard.profile_modal.view_full")}</span>
+                <ArrowUpRight size={12} strokeWidth={2} aria-hidden />
+              </Link>
+            )}
           </div>
         )}
       </div>

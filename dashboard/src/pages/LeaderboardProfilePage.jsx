@@ -89,7 +89,7 @@ export function LeaderboardProfilePage({ auth, signedIn, sessionSoftExpired, use
         </div>
       </header>
 
-      <main className="flex-1 py-10 sm:py-16">
+      <main className="flex-1 pt-4 pb-10 sm:pt-6 sm:pb-16">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <div className="rounded-2xl bg-white dark:bg-oai-gray-950 ring-1 ring-oai-gray-200 dark:ring-oai-gray-800 overflow-hidden shadow-sm dark:shadow-none">
             {state.loading && <ProfileSkeleton variant="page" />}
