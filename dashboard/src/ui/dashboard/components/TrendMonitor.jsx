@@ -156,6 +156,22 @@ function getBarSegments(row) {
   return segments.sort((a, b) => b.value - a.value);
 }
 
+// Bar kinds:
+//   - "real":      row carries a positive observed value; render stacked segments.
+//   - "real_zero": row is observed but value is 0 (truly idle period); render a flat baseline.
+//   - "predicted": row is `future`; render interpolated/extrapolated height as a faint preview.
+//   - "unsynced":  row is `missing`; render interpolated/extrapolated height as a faint preview.
+function getBarKind(row, value) {
+  if (row?.future) return "predicted";
+  if (row?.missing) return "unsynced";
+  if (value > 0) return "real";
+  return "real_zero";
+}
+
+const PREVIEW_OPACITY = 0.35;
+const BASELINE_HEIGHT_PX = 2;
+const PREVIEW_MIN_HEIGHT_PX = 4;
+
 function TrendBar({
   value,
   displayValue,
@@ -167,14 +183,28 @@ function TrendBar({
   onMouseLeave,
 }) {
   const shouldReduceMotion = useReducedMotion();
-  const heightPercent = scale.effectiveMax > 0 ? (displayValue / scale.effectiveMax) * 100 : 0;
-  const barHeight = `${Math.max(heightPercent, 2)}%`;
-  const isMissing = row?.missing;
-  const isFuture = row?.future;
-  const borderRadius = "0px";
+  const kind = getBarKind(row, value);
+  const isPreview = kind === "predicted" || kind === "unsynced";
 
-  const segments = getBarSegments(row);
+  const heightPercent = scale.effectiveMax > 0 ? (displayValue / scale.effectiveMax) * 100 : 0;
+
+  let barHeight;
+  let minHeight;
+  if (kind === "real") {
+    barHeight = `${Math.max(heightPercent, 2)}%`;
+    minHeight = `${PREVIEW_MIN_HEIGHT_PX}px`;
+  } else if (isPreview && heightPercent > 0) {
+    barHeight = `${heightPercent}%`;
+    minHeight = `${PREVIEW_MIN_HEIGHT_PX}px`;
+  } else {
+    // real_zero, or preview with no neighbours to extrapolate from.
+    barHeight = `${BASELINE_HEIGHT_PX}px`;
+    minHeight = `${BASELINE_HEIGHT_PX}px`;
+  }
+
+  const segments = kind === "real" ? getBarSegments(row) : [];
   const totalSegmentsValue = segments.reduce((sum, s) => sum + s.value, 0);
+  const renderFlat = kind !== "real" || totalSegmentsValue <= 0;
 
   return (
     <motion.div
@@ -187,7 +217,7 @@ function TrendBar({
         ease: [0.16, 1, 0.3, 1],
       }}
       style={{ originY: 1 }}
-      onMouseEnter={(e) => onMouseEnter(e, row, value, segments)}
+      onMouseEnter={(e) => onMouseEnter(e, row, value, segments, kind, displayValue)}
       onMouseLeave={onMouseLeave}
     >
       {/* 纵向整列 Hover 引导条 */}
@@ -197,18 +227,20 @@ function TrendBar({
         className="absolute inset-x-0 bottom-0 flex flex-col-reverse justify-start overflow-hidden cursor-pointer transition-all duration-200"
         style={{
           height: barHeight,
-          minHeight: value > 0 ? "4px" : "2px",
-          borderRadius: `${borderRadius} ${borderRadius} 0 0`,
+          minHeight,
         }}
       >
-        {isMissing || isFuture || value <= 0 || totalSegmentsValue <= 0 ? (
-          /* 单色/未同步兜底 */
+        {renderFlat ? (
+          /* 占位/预测/真实零：单色背景条 */
           <div
             data-trend-bar="true"
-            className="h-full w-full group-hover:brightness-110"
+            className={cn(
+              "h-full w-full group-hover:brightness-110 transition-all",
+              kind === "real" ? "" : "bg-oai-gray-100 dark:bg-oai-gray-800",
+            )}
             style={{
-              opacity: isMissing || isFuture ? 0.2 : 1,
-              background: value > 0 ? "#10b981" : "var(--oai-gray-100)",
+              opacity: isPreview ? PREVIEW_OPACITY : 1,
+              background: kind === "real" ? "#10b981" : undefined,
             }}
           />
         ) : (
@@ -235,6 +267,90 @@ function TrendBar({
   );
 }
 
+// Extract numeric tokens from a row, or null if the row carries no observation
+// (missing/future, no field, or non-finite). Real zeros stay as `0` — they are
+// observations, not gaps, and must NOT be interpolated over.
+function readRowValue(row) {
+  if (row?.missing || row?.future) return null;
+  const raw = row?.billable_total_tokens ?? row?.total_tokens ?? row?.value;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+// Predicted-bar curve tuning. We extrapolate at the mean of observed values
+// and apply a mild decay across distance to suggest uncertainty without
+// burying the bars. The nearest neighbour is intentionally NOT mixed in:
+// the last real bar is often a partial current hour that would otherwise
+// drag every future-hour prediction down for the rest of the day.
+const EXTRAPOLATION_DECAY_PER_STEP = 0.98;
+
+// Pure helper exported for unit testing. Returns one estimated value per index:
+// observed values pass through unchanged; null gaps are linearly interpolated
+// when bracketed by observations, and extrapolated at the mean of observed
+// values with a mild distance-based decay when only one side has data.
+// All-null input returns all zeros.
+export function computeInterpolatedSeries(rawValues) {
+  if (!Array.isArray(rawValues)) return [];
+  const out = new Array(rawValues.length);
+  for (let i = 0; i < rawValues.length; i++) {
+    if (rawValues[i] !== null) {
+      out[i] = rawValues[i];
+      continue;
+    }
+
+    let leftVal = null;
+    let leftIdx = -1;
+    for (let j = i - 1; j >= 0; j--) {
+      if (rawValues[j] !== null) {
+        leftVal = rawValues[j];
+        leftIdx = j;
+        break;
+      }
+    }
+
+    let rightVal = null;
+    let rightIdx = -1;
+    for (let j = i + 1; j < rawValues.length; j++) {
+      if (rawValues[j] !== null) {
+        rightVal = rawValues[j];
+        rightIdx = j;
+        break;
+      }
+    }
+
+    if (leftVal !== null && rightVal !== null) {
+      const ratio = (i - leftIdx) / (rightIdx - leftIdx);
+      out[i] = leftVal + (rightVal - leftVal) * ratio;
+    } else if (leftVal !== null) {
+      let sum = 0;
+      let count = 0;
+      for (let j = 0; j <= leftIdx; j++) {
+        if (rawValues[j] !== null) {
+          sum += rawValues[j];
+          count += 1;
+        }
+      }
+      const base = count > 0 ? sum / count : leftVal;
+      out[i] = base * Math.pow(EXTRAPOLATION_DECAY_PER_STEP, i - leftIdx);
+    } else if (rightVal !== null) {
+      let sum = 0;
+      let count = 0;
+      for (let j = rightIdx; j < rawValues.length; j++) {
+        if (rawValues[j] !== null) {
+          sum += rawValues[j];
+          count += 1;
+        }
+      }
+      const base = count > 0 ? sum / count : rightVal;
+      out[i] = base * Math.pow(EXTRAPOLATION_DECAY_PER_STEP, rightIdx - i);
+    } else {
+      out[i] = 0;
+    }
+  }
+  return out;
+}
+
 export function TrendMonitor({
   rows,
   from,
@@ -249,23 +365,31 @@ export function TrendMonitor({
   // modal). Default keeps the standalone dashboard appearance.
   embedded = false,
 }) {
-  const series = Array.isArray(rows) && rows.length ? rows : [];
+  const series = React.useMemo(
+    () => (Array.isArray(rows) && rows.length ? rows : []),
+    [rows],
+  );
 
-  const seriesValues = series.map((row) => {
-    if (row?.missing || row?.future) return 0;
-    const raw = row?.billable_total_tokens ?? row?.total_tokens ?? row?.value;
-    if (raw == null) return 0;
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : 0;
-  });
-  const scale = getTrendMonitorScale(seriesValues);
+  // rawValues: real observations (incl. 0) pass through; missing/future are null.
+  // seriesValues: zero-padded view used for y-axis scaling so gaps don't skew the max.
+  // interpolatedValues: per-index predicted height for missing/future gaps.
+  const { rawValues, seriesValues, scale, interpolatedValues } = React.useMemo(() => {
+    const raw = series.map(readRowValue);
+    const padded = raw.map((v) => (v == null ? 0 : v));
+    return {
+      rawValues: raw,
+      seriesValues: padded,
+      scale: getTrendMonitorScale(padded),
+      interpolatedValues: computeInterpolatedSeries(raw),
+    };
+  }, [series]);
 
   const [hoveredBar, setHoveredBar] = React.useState(null);
   const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0, shiftX: 0 });
   const containerRef = React.useRef(null);
   const hideTimeoutRef = React.useRef(null);
 
-  const handleBarMouseEnter = (e, row, value, segments) => {
+  const handleBarMouseEnter = (e, row, value, segments, kind, displayValue) => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
       hideTimeoutRef.current = null;
@@ -277,6 +401,8 @@ export function TrendMonitor({
       value,
       segments,
       timeLabel,
+      kind,
+      displayValue,
     });
 
     // 优先寻找真实柱状图定位，以防外层 hover 容器导致 top 坐标上移
@@ -344,19 +470,29 @@ export function TrendMonitor({
           </div>
           <div className="h-40 flex items-end gap-0.5 relative z-0">
             {seriesValues.length > 0 ? (
-              seriesValues.map((value, index) => (
-                <TrendBar
-                  key={index}
-                  value={value}
-                  displayValue={scale.clippedValues[index] ?? 0}
-                  scale={scale}
-                  index={index}
-                  row={series[index]}
-                  totalBars={seriesValues.length}
-                  onMouseEnter={handleBarMouseEnter}
-                  onMouseLeave={handleBarMouseLeave}
-                />
-              ))
+              seriesValues.map((value, index) => {
+                const row = series[index];
+                const isGap = row?.missing || row?.future;
+                // Real observations (incl. 0) use the y-clipped value so they
+                // stay proportional to neighbours. Only true gaps fall back to
+                // the predicted curve, clipped to the visible max.
+                const displayValue = isGap
+                  ? Math.min(interpolatedValues[index] ?? 0, scale.effectiveMax)
+                  : scale.clippedValues[index] ?? 0;
+                return (
+                  <TrendBar
+                    key={index}
+                    value={value}
+                    displayValue={displayValue}
+                    scale={scale}
+                    index={index}
+                    row={row}
+                    totalBars={seriesValues.length}
+                    onMouseEnter={handleBarMouseEnter}
+                    onMouseLeave={handleBarMouseLeave}
+                  />
+                );
+              })
             ) : (
               <div className="flex-1 h-full flex items-center justify-center">
                 <p className="text-sm text-oai-gray-400 dark:text-oai-gray-400">No data yet</p>
@@ -394,13 +530,25 @@ export function TrendMonitor({
               <span className="text-[11px] font-semibold text-oai-gray-500 dark:text-oai-gray-400">
                 {hoveredBar.timeLabel}
               </span>
+              {hoveredBar.kind === "predicted" && (
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-oai-gray-400 dark:text-oai-gray-500">
+                  Predicted
+                </span>
+              )}
+              {hoveredBar.kind === "unsynced" && (
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-oai-gray-400 dark:text-oai-gray-500">
+                  Unsynced
+                </span>
+              )}
             </div>
 
             {/* 内容 */}
             <div className="flex flex-col gap-2">
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-bold text-oai-gray-900 dark:text-white leading-none">
-                  {hoveredBar.value.toLocaleString()}
+                  {hoveredBar.kind === "predicted" || hoveredBar.kind === "unsynced"
+                    ? `~${Math.round(hoveredBar.displayValue ?? 0).toLocaleString()}`
+                    : hoveredBar.value.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-oai-gray-400 uppercase tracking-wider font-semibold">
                   Tokens
