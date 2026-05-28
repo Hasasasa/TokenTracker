@@ -54,6 +54,44 @@ function emptyCategoryMap() {
   return out;
 }
 
+function toNonNegativeNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
+}
+
+function readClaudeUsageTotals(usage) {
+  if (!usage || typeof usage !== "object") return null;
+  const input_tokens = toNonNegativeNumber(usage.input_tokens);
+  const cached_input_tokens = toNonNegativeNumber(usage.cache_read_input_tokens);
+  const cache_creation_input_tokens = toNonNegativeNumber(usage.cache_creation_input_tokens);
+  const output_tokens = toNonNegativeNumber(usage.output_tokens);
+  const reasoning_output_tokens = toNonNegativeNumber(usage.reasoning_output_tokens);
+  const total_tokens =
+    input_tokens + cached_input_tokens + cache_creation_input_tokens + output_tokens;
+
+  return {
+    input_tokens,
+    cached_input_tokens,
+    cache_creation_input_tokens,
+    output_tokens,
+    reasoning_output_tokens,
+    total_tokens,
+  };
+}
+
+function hasNonZeroClaudeUsage(usage) {
+  const totals = readClaudeUsageTotals(usage);
+  if (!totals) return false;
+  return (
+    totals.input_tokens +
+      totals.cached_input_tokens +
+      totals.cache_creation_input_tokens +
+      totals.output_tokens +
+      totals.reasoning_output_tokens >
+    0
+  );
+}
+
 function extractExecCommands(content) {
   const commands = [];
   for (const block of Array.isArray(content) ? content : []) {
@@ -481,10 +519,19 @@ async function categorizeSessionFile(filePath, { fromIso, toIso, seenHashes }, b
     if (toIso && ts > toIso) continue;
 
     const hash = claudeMessageDedupKey(obj);
-    if (hash) {
-      if (seenHashes.has(hash)) continue;
-      seenHashes.add(hash);
-    }
+    if (hash && seenHashes.has(hash)) continue;
+
+    // Defer the hash-add until we've confirmed this entry carries non-zero
+    // usage. Mirrors the same fix in rollout.js parseClaudeFile. Without it,
+    // a zero-token streaming snapshot (e.g. Mimo's pre-response thinking
+    // entry that shares the final response's message.id) would claim the
+    // bare-msgId dedup key — Mimo has no requestId, so claudeMessageDedupKey
+    // falls back to bare msgId — and pre-empt the real token-bearing entry,
+    // collapsing Mimo into a tiny fraction of its real total.
+    const usage = obj?.message?.usage;
+    if (!hasNonZeroClaudeUsage(usage)) continue;
+
+    if (hash) seenHashes.add(hash);
 
     classifyOneMessage(obj, sessionState, breakdown, toolLedger, skillLedger, execLedger);
     counted += 1;
@@ -1195,7 +1242,8 @@ async function computeClaudeGroundTruthBuckets({ rootDir = null } = {}) {
         continue;
       }
       const usage = obj?.message?.usage;
-      if (!usage || typeof usage !== "object") continue;
+      const totals = readClaudeUsageTotals(usage);
+      if (!totals || !hasNonZeroClaudeUsage(usage)) continue;
 
       const hash = claudeMessageDedupKey(obj);
       if (hash) {
@@ -1208,25 +1256,18 @@ async function computeClaudeGroundTruthBuckets({ rootDir = null } = {}) {
       const hourStart = ts ? toUtcHalfHourStart(ts) : null;
       if (!hourStart) continue;
 
-      const inputTok = Math.max(0, Number(usage.input_tokens || 0));
-      const cacheRead = Math.max(0, Number(usage.cache_read_input_tokens || 0));
-      const cacheCreate = Math.max(0, Number(usage.cache_creation_input_tokens || 0));
-      const outputTok = Math.max(0, Number(usage.output_tokens || 0));
-      const reasoningTok = Math.max(0, Number(usage.reasoning_output_tokens || 0));
-      const total = inputTok + cacheRead + cacheCreate + outputTok;
-
       const key = `${model}|${hourStart}`;
       let acc = buckets.get(key);
       if (!acc) {
         acc = bucketAccumulator();
         buckets.set(key, acc);
       }
-      acc.input_tokens += inputTok;
-      acc.cached_input_tokens += cacheRead;
-      acc.cache_creation_input_tokens += cacheCreate;
-      acc.output_tokens += outputTok;
-      acc.reasoning_output_tokens += reasoningTok;
-      acc.total_tokens += total;
+      acc.input_tokens += totals.input_tokens;
+      acc.cached_input_tokens += totals.cached_input_tokens;
+      acc.cache_creation_input_tokens += totals.cache_creation_input_tokens;
+      acc.output_tokens += totals.output_tokens;
+      acc.reasoning_output_tokens += totals.reasoning_output_tokens;
+      acc.total_tokens += totals.total_tokens;
     }
     rl.close();
     stream.close?.();

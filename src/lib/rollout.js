@@ -898,13 +898,8 @@ async function parseClaudeFile({
     const usage = obj?.message?.usage || obj?.usage;
     if (!usage || typeof usage !== "object") continue;
 
-    if (seenMessageHashes) {
-      const hash = claudeMessageDedupKey(obj);
-      if (hash) {
-        if (seenMessageHashes.has(hash)) continue;
-        seenMessageHashes.add(hash);
-      }
-    }
+    const dedupHash = seenMessageHashes ? claudeMessageDedupKey(obj) : null;
+    if (dedupHash && seenMessageHashes.has(dedupHash)) continue;
 
     const model = normalizeModelInput(obj?.message?.model || obj?.model) || DEFAULT_MODEL;
     const tokenTimestamp = typeof obj?.timestamp === "string" ? obj.timestamp : null;
@@ -912,6 +907,8 @@ async function parseClaudeFile({
 
     const delta = normalizeClaudeUsage(usage);
     if (!delta || isAllZeroUsage(delta)) continue;
+
+    if (dedupHash) seenMessageHashes.add(dedupHash);
     delta.conversation_count = 0;
 
     const bucketStart = toUtcHalfHourStart(tokenTimestamp);

@@ -133,6 +133,61 @@ test("matcher: lookupPricing fuzzy match restores `digit-digit` to `digit.digit`
   assert.equal(r.value.input, 1.4);
 });
 
+test("matcher: lookupPricing strips a LiteLLM provider prefix for bare queue models", () => {
+  // Queue rows store bare model names; LiteLLM keys are provider-qualified.
+  const curated = { exact: {}, alias: {}, fuzzy: [] };
+  const litellm = { "openrouter/xiaomi/mimo-v2.5-pro": { input: 1, output: 3, cache_read: 0.2 } };
+  const r = matcher.lookupPricing("mimo-v2.5-pro", { curated, litellm });
+  assert.equal(r.hit, true);
+  assert.equal(r.source, "litellm:prefix-strip");
+  assert.equal(r.value.input, 1);
+});
+
+test("matcher: prefix-strip is deterministic across providers (smallest key wins, order-independent)", () => {
+  const curated = { exact: {}, alias: {}, fuzzy: [] };
+  // Two providers expose the same model at different cache rates. JSON
+  // insertion order must NOT decide the winner — the lexicographically
+  // smallest key ("novita/..." < "openrouter/...") always wins.
+  const a = { input: 0.1, output: 0.3, cache_read: 0.01 };
+  const b = { input: 0.1, output: 0.3, cache_read: 0.02 };
+  const r1 = matcher.lookupPricing("mimo-v2-flash", {
+    curated,
+    litellm: { "openrouter/xiaomi/mimo-v2-flash": a, "novita/xiaomimimo/mimo-v2-flash": b },
+  });
+  const r2 = matcher.lookupPricing("mimo-v2-flash", {
+    curated,
+    litellm: { "novita/xiaomimimo/mimo-v2-flash": b, "openrouter/xiaomi/mimo-v2-flash": a },
+  });
+  assert.equal(r1.source, "litellm:prefix-strip");
+  assert.equal(r1.value.cache_read, 0.02, "novita key (smallest) wins");
+  assert.equal(r2.value.cache_read, 0.02, "winner independent of insertion order");
+});
+
+test("matcher: CURATED alias beats a LiteLLM provider-prefixed bare collision (auto → composer-1)", () => {
+  // Regression: a `*/auto` LiteLLM entry must NOT hijack Cursor's "auto".
+  // Alias (step 3) runs before prefix-strip (step 5b), so "auto" stays composer-1.
+  const curated = {
+    exact: { "composer-1": { input: 1.25, output: 10 } },
+    alias: { auto: "composer-1" },
+    fuzzy: [],
+  };
+  const litellm = { "openrouter/openrouter/auto": { input: 0, output: 0 } };
+  const r = matcher.lookupPricing("auto", { curated, litellm });
+  assert.equal(r.source, "curated:alias");
+  assert.equal(r.value.input, 1.25);
+});
+
+test("matcher: LiteLLM exact beats prefix-strip when a canonical bare key exists", () => {
+  const curated = { exact: {}, alias: {}, fuzzy: [] };
+  const litellm = {
+    "gpt-4": { input: 30, output: 60 },
+    "azure/gpt-4": { input: 10, output: 30 },
+  };
+  const r = matcher.lookupPricing("gpt-4", { curated, litellm });
+  assert.equal(r.source, "litellm:exact");
+  assert.equal(r.value.input, 30, "canonical bare key wins over a provider-prefixed one");
+});
+
 test("matcher: lookupPricing dot-form fallback covers exact-only Droid model ids", () => {
   const curated = {
     exact: { "MiniMax-M2.1": { input: 0.5, output: 3, cache_read: 0.05 } },

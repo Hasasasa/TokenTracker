@@ -104,10 +104,12 @@ const CLAUDE_MEM_OBSERVER_PATH_SEGMENT = "--claude-mem-observer-sessions";
 // (DeepSeek/Kimi/Mimo/MiniMax anthropic-compatible endpoints, plus Claude
 // Code's sub-agent / thinking transport paths). The repaired ground truth
 // was therefore inflated by 1.6–3.7x on those providers — v3 left it that
-// way. v4 re-runs the same five-step atomic repair against the corrected
-// `claudeMessageDedupKey()` (msgId is globally unique on its own per the
-// Anthropic protocol, so the reqId requirement was always unnecessary).
-const CLAUDE_GROUND_TRUTH_REPAIR_KEY = "claudeGroundTruthRepair_2026_05_v4";
+// way.
+// v6 re-runs the same atomic repair after making Claude zero-usage snapshots
+// ineligible for dedup state. Mimo reuses message.id across zero/partial
+// streaming snapshots and the final token-bearing response, so v4/v5 could
+// preserve a tiny scar total instead of the ccusage-aligned ground truth.
+const CLAUDE_GROUND_TRUTH_REPAIR_KEY = "claudeGroundTruthRepair_2026_05_v6";
 
 async function cmdSync(argv) {
   const opts = parseArgs(argv);
@@ -2045,7 +2047,7 @@ async function repairClaudeQueueFromGroundTruth({
     }
     uploadState.offset = 0;
     uploadState.updatedAt = new Date().toISOString();
-    uploadState.note = "reset_after_claude_repair_2026_05_v4";
+    uploadState.note = "reset_after_claude_repair_2026_05_v6";
     await fs.writeFile(queueStatePath, JSON.stringify(uploadState));
   }
 
@@ -2112,7 +2114,7 @@ async function repairClaudeQueueFromGroundTruth({
       }
       st.offset = 0;
       st.updatedAt = new Date().toISOString();
-      st.note = "reset_after_claude_repair_2026_05_v4";
+      st.note = "reset_after_claude_repair_2026_05_v6";
       await fs.writeFile(projectQueueStatePath, JSON.stringify(st));
     }
   }

@@ -7,6 +7,7 @@ const { test } = require("node:test");
 
 const {
   computeClaudeCategoryBreakdown,
+  computeClaudeGroundTruthBuckets,
   splitOutputByContent,
   classifyOneMessage,
   emptyCategoryMap,
@@ -268,6 +269,73 @@ test("computeClaudeCategoryBreakdown: deduplicates by msgId+requestId", async ()
     assert.equal(result.message_count, 1);
     const sys = result.categories.find((c) => c.key === "system_prefix").totals;
     assert.equal(sys.cache_creation_input_tokens, 1000);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("computeClaudeGroundTruthBuckets: zero usage snapshots do not poison msgId-only dedup", async () => {
+  const dir = await makeTmpDir("ttcat-groundtruth-zero-snapshot");
+  try {
+    const file = path.join(dir, "s.jsonl");
+    const ts = "2026-05-01T13:12:00.000Z";
+    const base = {
+      type: "assistant",
+      timestamp: ts,
+      message: {
+        id: "msg_mimo_reused",
+        model: "mimo-v2.5-pro",
+        content: [{ type: "text", text: "ok" }],
+      },
+    };
+
+    await writeJsonl(file, [
+      {
+        ...base,
+        message: {
+          ...base.message,
+          usage: {
+            input_tokens: 0,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 0,
+            output_tokens: 0,
+          },
+        },
+      },
+      {
+        ...base,
+        message: {
+          ...base.message,
+          usage: {
+            input_tokens: 10,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 100,
+            output_tokens: 5,
+          },
+        },
+      },
+      {
+        ...base,
+        message: {
+          ...base.message,
+          usage: {
+            input_tokens: 10,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 100,
+            output_tokens: 5,
+          },
+        },
+      },
+    ]);
+
+    const result = await computeClaudeGroundTruthBuckets({ rootDir: dir });
+    const rows = result.rows.filter((row) => row.model === "mimo-v2.5-pro");
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].input_tokens, 10);
+    assert.equal(rows[0].cached_input_tokens, 100);
+    assert.equal(rows[0].output_tokens, 5);
+    assert.equal(rows[0].total_tokens, 115);
+    assert.deepEqual(result.seenHashes, ["msg_mimo_reused"]);
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }

@@ -6,6 +6,7 @@
 //   3. CURATED alias (e.g. "auto" -> "composer-1")
 //   4. CURATED fuzzy substring (e.g. "kiro-future-xyz" matches via "kiro")
 //   5. LiteLLM suffix-strip (gpt-5-codex-high-fast -> gpt-5-codex)
+//   5b. LiteLLM provider-prefix strip (mimo-v2.5-pro -> openrouter/xiaomi/mimo-v2.5-pro)
 //   6. LiteLLM reverse substring (longest-key first)
 //   7. null  (caller decides what to do — typically zero-pricing + negative cache)
 
@@ -167,6 +168,25 @@ function lookupPricing(model, { curated, litellm, source } = {}) {
     if (stripped !== lookupModel && litellm[stripped]) {
       return { hit: true, source: "litellm:strip", value: litellm[stripped] };
     }
+  }
+
+  // 5b. LiteLLM provider-prefix strip. Queue rows store the bare model name
+  // (e.g. "mimo-v2.5-pro"), but LiteLLM keys are provider-qualified (e.g.
+  // "openrouter/xiaomi/mimo-v2.5-pro"), so the exact lookups above miss. Match
+  // any key whose path suffix equals the bare model. When several providers
+  // expose the same model, pick the lexicographically smallest key so the
+  // resolved price is deterministic and independent of JSON ordering. Runs
+  // AFTER curated alias/fuzzy so e.g. Cursor's "auto" still resolves to
+  // composer-1 rather than a LiteLLM "*/auto" entry.
+  if (litellm) {
+    const suffix = "/" + lower;
+    let best = null;
+    for (const key of Object.keys(litellm)) {
+      if (key.length > suffix.length && key.toLowerCase().endsWith(suffix)) {
+        if (best === null || key < best) best = key;
+      }
+    }
+    if (best) return { hit: true, source: "litellm:prefix-strip", value: litellm[best] };
   }
 
   // 6. LiteLLM reverse substring (longest-key first)
