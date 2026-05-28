@@ -247,10 +247,16 @@ interface DateRange {
 function computeDateRange(period: Period): DateRange {
   const now = new Date();
   if (period === "week") {
+    // ISO 8601 Monday-start week (matches dashboard/src/lib/date-range.ts:67
+    // `period === "week"` branch, so cloud leaderboard rank and the
+    // dashboard's own "Week" tab cover the same 7 days. Previously this used
+    // Sunday-start which made leaderboard's week off-by-one vs the dashboard
+    // and confused users comparing the two numbers.
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    d.setUTCDate(d.getUTCDate() - d.getUTCDay()); // Sunday start
+    const offset = (d.getUTCDay() + 6) % 7; // days since Monday (Mon=0..Sun=6)
+    d.setUTCDate(d.getUTCDate() - offset); // Monday
     const from_day = d.toISOString().slice(0, 10);
-    d.setUTCDate(d.getUTCDate() + 6); // Saturday end
+    d.setUTCDate(d.getUTCDate() + 6); // Sunday
     const to_day = d.toISOString().slice(0, 10);
     return { from_day, to_day };
   }

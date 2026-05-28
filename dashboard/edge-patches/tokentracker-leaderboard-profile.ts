@@ -259,7 +259,7 @@ function windowBoundsForPeriod(period: string): { from_day: string; to_day: stri
   const now = new Date();
   if (period === "week") {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)) /* ISO Mon-start, matches leaderboard-refresh+dashboard */;
     const from = d.toISOString().slice(0, 10);
     d.setUTCDate(d.getUTCDate() + 6);
     return { from_day: from, to_day: d.toISOString().slice(0, 10) };

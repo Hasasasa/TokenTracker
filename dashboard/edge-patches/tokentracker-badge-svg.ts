@@ -99,7 +99,7 @@ async function windowBounds(client: any, period: string): Promise<{ from_day: st
   let to_day: string;
   if (period === "week") {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)) /* ISO Mon-start, matches leaderboard-refresh+dashboard */;
     from_day = d.toISOString().slice(0, 10);
     d.setUTCDate(d.getUTCDate() + 6);
     to_day = d.toISOString().slice(0, 10);

@@ -99,10 +99,15 @@ export default async function (req: Request): Promise<Response> {
   let from_day: string;
   let to_day: string;
   if (period === "week") {
+    // ISO 8601 Monday-start week. Must match
+    // tokentracker-leaderboard-refresh.ts AND dashboard/src/lib/date-range.ts
+    // so the (period, from_day, to_day) tuple the reader queries matches the
+    // tuple the refresh wrote.
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    d.setUTCDate(d.getUTCDate() - d.getUTCDay());
+    const offset = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - offset); // Monday
     from_day = d.toISOString().slice(0, 10);
-    d.setUTCDate(d.getUTCDate() + 6);
+    d.setUTCDate(d.getUTCDate() + 6); // Sunday
     to_day = d.toISOString().slice(0, 10);
   } else if (period === "month") {
     from_day = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;
