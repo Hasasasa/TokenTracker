@@ -1,7 +1,12 @@
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { Maximize2 } from "lucide-react";
 import { copy } from "../../../lib/copy";
 import { cn } from "../../../lib/cn";
+import { useCurrency } from "../../../hooks/useCurrency.js";
+import { formatUsdCurrency } from "../../../lib/format";
+import { formatBucketRange, formatTickLabel, granularityFromPeriod } from "../../../lib/trend-stats";
+import { TrendMonitorZoomModal } from "./TrendMonitorZoomModal";
 
 function interpolateQuantile(sortedValues, ratio) {
   if (!Array.isArray(sortedValues) || sortedValues.length === 0) return 0;
@@ -364,6 +369,19 @@ export function TrendMonitor({
   // already provides a section wrapper (e.g. the leaderboard profile
   // modal). Default keeps the standalone dashboard appearance.
   embedded = false,
+  // Tailwind height class for the bar row. The hardcoded h-40 is the small
+  // dashboard card; the zoom modal passes a tall class (e.g. h-[60vh]) so the
+  // bars actually grow thick and readable.
+  chartHeightClass = "h-40",
+  // When `true`, render zoom-only affordances: an X-axis time-tick row under
+  // the bars and extra tooltip fields (precise time range, cost, conversations).
+  // The small dashboard card leaves this false and is byte-for-byte unchanged.
+  isZoom = false,
+  // useTrendData config (baseUrl/accessToken/cacheKey/timeZone/...) passed
+  // through so the zoom modal can hold its OWN data instance for granularity
+  // drill-down without mutating the dashboard's state. Only used (and only
+  // present) on the standalone card; null disables the maximize button.
+  zoomConfig = null,
 }) {
   const series = React.useMemo(
     () => (Array.isArray(rows) && rows.length ? rows : []),
@@ -384,8 +402,12 @@ export function TrendMonitor({
     };
   }, [series]);
 
+  const { currency, rate } = useCurrency();
+  const granularity = granularityFromPeriod(period);
+
   const [hoveredBar, setHoveredBar] = React.useState(null);
-  const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0, shiftX: 0 });
+  const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0, shiftX: 0, flipDown: false });
+  const [isZoomOpen, setIsZoomOpen] = React.useState(false);
   const containerRef = React.useRef(null);
   const hideTimeoutRef = React.useRef(null);
 
@@ -395,7 +417,9 @@ export function TrendMonitor({
       hideTimeoutRef.current = null;
     }
 
-    const timeLabel = row?.day || row?.hour || row?.month || "";
+    const timeLabel = isZoom
+      ? formatBucketRange(row, granularity)
+      : row?.day || row?.hour || row?.month || "";
     setHoveredBar({
       row,
       value,
@@ -427,7 +451,14 @@ export function TrendMonitor({
       shiftX = (containerRect.width - halfWidth) - x;
     }
 
-    setTooltipPos({ x, y, shiftX });
+    // Flip the tooltip below the bar when there isn't room above it. Tall zoom
+    // bars sit near the top of the chart, so an upward tooltip would be clipped
+    // by the chart container. `y` is the bar top relative to the container top.
+    const estTooltipHeight =
+      96 + (isZoom ? 22 : 0) + (segments.length ? Math.min(segments.length * 30 + 24, 174) : 0);
+    const flipDown = y < estTooltipHeight + 12;
+
+    setTooltipPos({ x, y, shiftX, flipDown });
   };
 
   const handleBarMouseLeave = () => {
@@ -444,21 +475,35 @@ export function TrendMonitor({
         "relative",
         !embedded &&
           "rounded-xl border border-oai-gray-200 dark:border-oai-gray-800 bg-white dark:bg-oai-gray-900 p-5",
+        isZoom && "flex h-full flex-col",
         className,
       )}
     >
       {!embedded && (
-        <div className="mb-3">
-          <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">
-            {copy("trend.monitor.label")}
-          </h3>
-          {showTimeZoneLabel && timeZoneLabel && (
-            <p className="text-xs text-oai-gray-400 dark:text-oai-gray-400 mt-0.5">{timeZoneLabel}</p>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">
+              {copy("trend.monitor.label")}
+            </h3>
+            {showTimeZoneLabel && timeZoneLabel && (
+              <p className="text-xs text-oai-gray-400 dark:text-oai-gray-400 mt-0.5">{timeZoneLabel}</p>
+            )}
+          </div>
+          {zoomConfig && (
+            <button
+              type="button"
+              onClick={() => setIsZoomOpen(true)}
+              aria-label={copy("trend.zoom.open_aria")}
+              title={copy("trend.zoom.open_aria")}
+              className="shrink-0 p-1.5 rounded-md text-oai-gray-400 hover:text-oai-gray-700 dark:hover:text-oai-gray-200 hover:bg-oai-gray-100 dark:hover:bg-oai-gray-800 transition-colors"
+            >
+              <Maximize2 size={14} />
+            </button>
           )}
         </div>
       )}
-      <div className="space-y-3">
-        <div className="relative">
+      <div className={cn("space-y-3", isZoom && "flex flex-1 flex-col min-h-0 !space-y-0 gap-3")}>
+        <div className={cn("relative", isZoom && "flex-1 min-h-0")}>
           <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
             {[0, 25, 50, 75, 100].map((pct) => (
               <div
@@ -468,7 +513,7 @@ export function TrendMonitor({
               />
             ))}
           </div>
-          <div className="h-40 flex items-end gap-0.5 relative z-0">
+          <div className={cn("flex items-end gap-0.5 relative z-0", chartHeightClass)}>
             {seriesValues.length > 0 ? (
               seriesValues.map((value, index) => {
                 const row = series[index];
@@ -501,6 +546,27 @@ export function TrendMonitor({
           </div>
         </div>
 
+        {isZoom && seriesValues.length > 0 && (
+          <div className="flex gap-0.5 select-none">
+            {series.map((row, index) => {
+              const last = seriesValues.length - 1;
+              const step = Math.max(1, Math.ceil(seriesValues.length / 8));
+              const isTick = index % step === 0 || index === last;
+              const justify =
+                index === 0 ? "justify-start" : index === last ? "justify-end" : "justify-center";
+              return (
+                <div key={index} className={cn("flex-1 min-w-0 flex", justify)}>
+                  {isTick && (
+                    <span className="text-[9px] text-oai-gray-400 dark:text-oai-gray-500 whitespace-nowrap font-mono">
+                      {formatTickLabel(row, granularity)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {from && to && (
           <div className="flex justify-between text-xs text-oai-gray-500 dark:text-oai-gray-300 font-medium pt-2 border-t border-oai-gray-100 dark:border-oai-gray-800">
             <span>{from === to ? `${from} 00:00` : from}</span>
@@ -520,7 +586,10 @@ export function TrendMonitor({
         >
           {/* Tooltip 玻璃外框（底边固定在柱子上方） */}
           <div
-            className="absolute left-0 bottom-[10px] backdrop-blur-md bg-white/95 dark:bg-oai-gray-900/95 border border-oai-gray-200/50 dark:border-oai-gray-800/50 shadow-xl rounded-xl p-3.5 max-w-[280px] min-w-[220px] flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100"
+            className={cn(
+              "absolute left-0 backdrop-blur-md bg-white/95 dark:bg-oai-gray-900/95 border border-oai-gray-200/50 dark:border-oai-gray-800/50 shadow-xl rounded-xl p-3.5 max-w-[280px] min-w-[220px] flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100",
+              tooltipPos.flipDown ? "top-[10px]" : "bottom-[10px]",
+            )}
             style={{
               transform: `translateX(calc(-50% + ${tooltipPos.shiftX}px))`,
             }}
@@ -554,6 +623,29 @@ export function TrendMonitor({
                   Tokens
                 </span>
               </div>
+
+              {isZoom &&
+                (hoveredBar.row?.total_cost_usd != null ||
+                  Number(hoveredBar.row?.conversation_count) > 0) && (
+                  <div className="flex items-center gap-3 text-[11px] text-oai-gray-500 dark:text-oai-gray-400">
+                    {hoveredBar.row?.total_cost_usd != null && (
+                      <span>
+                        <span className="font-semibold text-oai-gray-700 dark:text-oai-gray-200">
+                          {formatUsdCurrency(hoveredBar.row.total_cost_usd, { currency, rate })}
+                        </span>{" "}
+                        {copy("trend.zoom.tooltip.cost")}
+                      </span>
+                    )}
+                    {Number(hoveredBar.row?.conversation_count) > 0 && (
+                      <span>
+                        <span className="font-semibold text-oai-gray-700 dark:text-oai-gray-200">
+                          {Number(hoveredBar.row.conversation_count).toLocaleString()}
+                        </span>{" "}
+                        {copy("trend.zoom.tooltip.conversations")}
+                      </span>
+                    )}
+                  </div>
+                )}
 
               {hoveredBar.segments && hoveredBar.segments.length > 0 ? (
                 <div className="mt-1.5 border-t border-oai-gray-100 dark:border-oai-gray-800/60 pt-2 flex flex-col gap-1.5">
@@ -605,10 +697,27 @@ export function TrendMonitor({
 
           {/* 倒三角小尾巴 */}
           <div
-            className="absolute bottom-[6px] left-0 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white dark:bg-oai-gray-900 border-r border-b border-oai-gray-200/50 dark:border-oai-gray-800/50 shadow-sm"
-            style={{ marginBottom: "1px" }}
+            className={cn(
+              "absolute left-0 -translate-x-1/2 w-2.5 h-2.5 rotate-45 bg-white dark:bg-oai-gray-900 border-oai-gray-200/50 dark:border-oai-gray-800/50 shadow-sm",
+              tooltipPos.flipDown ? "top-[6px] border-l border-t" : "bottom-[6px] border-r border-b",
+            )}
+            style={tooltipPos.flipDown ? { marginTop: "1px" } : { marginBottom: "1px" }}
           />
         </div>
+      )}
+
+      {isZoomOpen && zoomConfig && (
+        <TrendMonitorZoomModal
+          zoomConfig={zoomConfig}
+          period={period}
+          from={from}
+          to={to}
+          timeZoneLabel={timeZoneLabel}
+          onClose={() => setIsZoomOpen(false)}
+          renderChart={(chartProps) => (
+            <TrendMonitor embedded isZoom chartHeightClass="h-full" {...chartProps} />
+          )}
+        />
       )}
     </div>
   );

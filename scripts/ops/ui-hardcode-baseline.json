@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-29T02:30:20.766Z",
+  "generatedAt": "2026-05-29T15:59:41.740Z",
   "root": "dashboard/src",
   "rules": {
     "colors": "hex/rgb(a) literals",
     "rawText": "JSX text nodes containing letters or digits"
   },
   "totals": {
-    "colors": 243,
-    "rawText": 148
+    "colors": 246,
+    "rawText": 152
   },
   "files": {
     "dashboard/src/components/InsforgeUserHeaderControls.jsx": {
@@ -23,12 +23,11 @@
       "rawText": 0,
       "rawTextTokens": []
     },
-    "dashboard/src/components/LoginModal.jsx": {
+    "dashboard/src/components/LoginCard.jsx": {
       "colors": 4,
-      "rawText": 2,
+      "rawText": 1,
       "rawTextTokens": [
-        "); const GITHUB_ICON = (",
-        "Token Tracker"
+        "); const GITHUB_ICON = ("
       ]
     },
     "dashboard/src/components/SortableColumnHeader.jsx": {
@@ -283,15 +282,22 @@
     },
     "dashboard/src/ui/dashboard/components/TrendMonitor.jsx": {
       "colors": 30,
-      "rawText": 6,
+      "rawText": 9,
       "rawTextTokens": [
+        "0 && (",
         "0 ? (",
+        "0) && (",
         "No data yet",
         "Predicted",
         "Tokens",
         "Unsynced",
         "sum + s.value, 0); const renderFlat = kind !== \"real\" || totalSegmentsValue"
       ]
+    },
+    "dashboard/src/ui/dashboard/components/TrendMonitorZoomModal.jsx": {
+      "colors": 1,
+      "rawText": 0,
+      "rawTextTokens": []
     },
     "dashboard/src/ui/dashboard/components/UsageLimitsPanel.jsx": {
       "colors": 0,
@@ -333,8 +339,16 @@
         "g\"); expect(groups.length).toBe(2); //"
       ]
     },
-    "dashboard/src/ui/dashboard/views/DashboardView.jsx": {
+    "dashboard/src/ui/dashboard/components/__tests__/TrendMonitor.test.jsx": {
       "colors": 0,
+      "rawText": 2,
+      "rawTextTokens": [
+        "); expect(plain.container.textContent).not.toContain(\"14:00\"); const zoomed = render(",
+        "); expect(without.queryByRole(\"button\")).toBeNull(); const withCfg = render("
+      ]
+    },
+    "dashboard/src/ui/dashboard/views/DashboardView.jsx": {
+      "colors": 2,
       "rawText": 1,
       "rawTextTokens": [
         "D_LEFT_BASE + STEP * leftIdx++; const D_DATA_DETAILS = D_LEFT_BASE + STEP * 5; // 留给右列底部 return ("

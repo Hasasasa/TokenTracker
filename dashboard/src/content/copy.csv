@@ -75,16 +75,18 @@ landing.v2.install.mac_cta,landing,LandingPage,MarketingLanding,mac_cta,"MAC APP
 landing.v2.models.title,landing,LandingPage,MarketingLanding,models_title,"SUPPORTED AI CLI TOOLS",,active
 landing.v2.compare.kicker,landing,LandingPage,MarketingLanding,compare_kicker,"SEAMLESS TRACKING",,active
 landing.v2.compare.title,landing,LandingPage,MarketingLanding,compare_title,"Stop guessing your AI usage.",,active
-landing.v2.compare.subtitle,landing,LandingPage,MarketingLanding,compare_subtitle,"AI CLI tools hide your usage data in obscure local files. TokenTracker aggregates them into a single, beautiful dashboard in real-time.",,active
+landing.v2.compare.subtitle,landing,LandingPage,MarketingLanding,compare_subtitle,"AI CLI tools hide raw usage data in obscure local files. TokenTracker consolidates them into a local-first dashboard in real-time.",,active
 landing.v2.distill.body,landing,LandingPage,MarketingLanding,distill_body,"100% local processing. No prompts or code are ever collected.",,active
 landing.v2.compare.with.title,landing,LandingPage,MarketingLanding,with_title,"WITH TOKEN TRACKER",,active
 landing.v2.compare.with.p1,landing,LandingPage,MarketingLanding,with_p1,"Centralized usage dashboard",,active
 landing.v2.compare.with.p2,landing,LandingPage,MarketingLanding,with_p2,"Real-time token metrics",,active
 landing.v2.compare.with.p3,landing,LandingPage,MarketingLanding,with_p3,"100% local, privacy-guaranteed",,active
+landing.v2.compare.with.p4,landing,LandingPage,MarketingLanding,with_p4,"Multi-client terminal audit trail",,active
 landing.v2.compare.without.title,landing,LandingPage,MarketingLanding,without_title,"WITHOUT IT",,active
 landing.v2.compare.without.p1,landing,LandingPage,MarketingLanding,without_p1,"Scattered JSON log files",,active
 landing.v2.compare.without.p2,landing,LandingPage,MarketingLanding,without_p2,"Blind to token consumption",,active
 landing.v2.compare.without.p3,landing,LandingPage,MarketingLanding,without_p3,"Unexpected API bills",,active
+landing.v2.compare.without.p4,landing,LandingPage,MarketingLanding,without_p4,"Zero historical audit logs",,active
 landing.v2.footer.line,landing,LandingPage,MarketingLanding,footer_line,"Token Tracker — Made by developers, for developers.",,active
 landing.v2.nav.status,landing,LandingPage,MarketingLanding,nav_status,"Status",,active
 landing.v2.nav.github,landing,LandingPage,MarketingLanding,nav_github,"GitHub",,active
@@ -155,6 +157,31 @@ dashboard.cost_breakdown.close,ui,CostAnalysisModal,CostAnalysisModal,close_labe
 
 
 trend.monitor.label,ui,TrendMonitor,TrendMonitor,label,"Usage Trend",,active
+trend.zoom.open_aria,ui,TrendMonitor,TrendMonitor,zoom_open_aria,"Expand to full screen",,active
+trend.zoom.close_aria,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_close_aria,"Close",,active
+trend.zoom.badge,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_badge,"Trend Insight",,active
+trend.zoom.desc,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_desc,"Hover any bar to inspect tokens, cost and conversations. Switch granularity to drill from months down to half-hours.",,active
+trend.zoom.insight_badge,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_badge,"Insight",,active
+trend.zoom.tooltip.cost,ui,TrendMonitor,TrendMonitor,zoom_tooltip_cost,"cost",,active
+trend.zoom.tooltip.conversations,ui,TrendMonitor,TrendMonitor,zoom_tooltip_conversations,"conversations",,active
+trend.zoom.stats.tokens,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_stats_tokens,"Total Tokens",,active
+trend.zoom.stats.cost,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_stats_cost,"Total Cost",,active
+trend.zoom.stats.conversations,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_stats_conversations,"Conversations",,active
+trend.zoom.stats.peak,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_stats_peak,"Peak Bucket",,active
+trend.zoom.gran.aria,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_gran_aria,"Granularity",,active
+trend.zoom.gran.30min,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_gran_30min,"30 min",,active
+trend.zoom.gran.day,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_gran_day,"Day",,active
+trend.zoom.gran.month,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_gran_month,"Month",,active
+trend.zoom.prev_day,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_prev_day,"Previous day",,active
+trend.zoom.next_day,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_next_day,"Next day",,active
+trend.zoom.loading,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_loading,"Loading…",,active
+trend.zoom.pick_day,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_pick_day,"Pick a day",,active
+trend.zoom.pick_range,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_pick_range,"Pick a date range",,active
+trend.zoom.insight.empty,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_empty,"A quiet stretch. Not a single token crossed the wire.",,active
+trend.zoom.insight.calm,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_calm,"Light touch. The model mostly sat on standby, waking only when you reached for it.",,active
+trend.zoom.insight.steady,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_steady,"A steady rhythm across {{active}} active stretches, cresting at {{peak}}. The kind of pace that ships things without drama.",,active
+trend.zoom.insight.heavy,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_heavy,"Heavy lifting: {{active}} stretches running hot, peaking at {{peak}}. This is output from someone who manufactures momentum instead of waiting for it.",,active
+trend.zoom.insight.massive,ui,TrendMonitorZoomModal,TrendMonitorZoomModal,zoom_insight_massive,"Industrial scale. A {{peak}} peak and throughput that never cools. At this volume you are not using the model, you are running a foundry.",,active
 
 heatmap.title,ui,ActivityHeatmap,ActivityHeatmap,title,"Activity Heatmap",,active
 heatmap.empty,ui,ActivityHeatmap,ActivityHeatmap,empty_state,"No activity data yet.",,active
@@ -800,3 +827,39 @@ local_only.open_app,dashboard,LocalOnlyNotice,LocalOnlyNotice,open_app,"Open in 
 local_only.download,dashboard,LocalOnlyNotice,LocalOnlyNotice,download,"Get the Mac app",,active
 leaderboard.profile.like.aria_like,dashboard,LeaderboardProfileModal,LikeButton,aria_like,"Like profile",,active
 leaderboard.profile.like.aria_unlike,dashboard,LeaderboardProfileModal,LikeButton,aria_unlike,"Unlike profile",,active
+dashboard.auth_gate.title,dashboard,DashboardPage,DashboardView,auth_gate_title,"Sign in to Token Tracker",,active
+dashboard.auth_gate.subtitle,dashboard,DashboardPage,DashboardView,auth_gate_subtitle,"Sign in to sync and view your API usage, cost, and token consumption trends in the cloud.",,active
+dashboard.auth_gate.button,dashboard,DashboardPage,DashboardView,auth_gate_button,"Sign In",,active
+dashboard.expired_gate.title,dashboard,DashboardPage,DashboardView,expired_gate_title,"Session Expired",,active
+dashboard.expired_gate.subtitle,dashboard,DashboardPage,DashboardView,expired_gate_subtitle,"Your session has expired. Please sign in again to continue viewing your cloud dashboard.",,active
+dashboard.expired_gate.button,dashboard,DashboardPage,DashboardView,expired_gate_button,"Sign In Again",,active
+shared.app_name,shared,*,*,app_name,"Token Tracker",,active
+dashboard.auth_gate.hero_title,dashboard,DashboardPage,DashboardView,hero_title,"Track every AI agent token seamlessly",,active
+dashboard.auth_gate.hero_subtitle,dashboard,DashboardPage,DashboardView,hero_subtitle,"Clear, transparent, and multi-endpoint control",,active
+dashboard.auth_gate.desc,dashboard,DashboardPage,DashboardView,desc,"Securely sync token quotas, concurrent costs, and latency across Claude Code, Cursor, and Gemini CLI in a beautifully unified real-time dashboard.",,active
+dashboard.auth_gate.feature.sync.title,dashboard,DashboardPage,DashboardView,sync_title,"Real-time Cloud Sync",,active
+dashboard.auth_gate.feature.sync.desc,dashboard,DashboardPage,DashboardView,sync_desc,"Automated pipeline harvesting terminal execution costs into secure cloud records.",,active
+dashboard.auth_gate.feature.anal.title,dashboard,DashboardPage,DashboardView,anal_title,"Multi-dimensional Analytics",,active
+dashboard.auth_gate.feature.anal.desc,dashboard,DashboardPage,DashboardView,anal_desc,"Slice and dice by models or period to isolate high-cost peaks and allocations.",,active
+dashboard.auth_gate.feature.guard.title,dashboard,DashboardPage,DashboardView,guard_title,"Local-first Autonomy",,active
+dashboard.auth_gate.feature.guard.desc,dashboard,DashboardPage,DashboardView,guard_desc,"Skip all auth steps entirely on localhost. Preserves local debug speed.",,active
+dashboard.expired_gate.hero_title,dashboard,DashboardPage,DashboardView,expired_hero_title,"Your cloud session has expired",,active
+dashboard.expired_gate.desc,dashboard,DashboardPage,DashboardView,expired_desc,"For privacy and cloud drive security, active sessions expire automatically after a period. Verify again to restore your dashboard instantly.",,active
+dashboard.expired_gate.feature.sec.title,dashboard,DashboardPage,DashboardView,sec_title,"Secure Protection",,active
+dashboard.expired_gate.feature.sec.desc,dashboard,DashboardPage,DashboardView,sec_desc,"Encrypted tokens automatically rotate, guaranteeing complete assets privacy.",,active
+dashboard.expired_gate.feature.restore.title,dashboard,DashboardPage,DashboardView,restore_title,"Seamless Restore",,active
+dashboard.expired_gate.feature.restore.desc,dashboard,DashboardPage,DashboardView,restore_desc,"Instantly resume telemetry charts without reconfiguring terminal hooks.",,active
+dashboard.expired_gate.feature.cloud.title,dashboard,DashboardPage,DashboardView,cloud_title,"Multi-device Sync",,active
+dashboard.expired_gate.feature.cloud.desc,dashboard,DashboardPage,DashboardView,cloud_desc,"Readily access parsed token logs anywhere through synced dashboard.",,active
+landing.v2.leaderboard.kicker,landing,LandingPage,MarketingLanding,leaderboard_kicker,"GLOBAL TOKEN LEADERBOARD",,active
+landing.v2.leaderboard.title,landing,LandingPage,MarketingLanding,leaderboard_title,"Compete on AI Token Efficiency",,active
+landing.v2.leaderboard.subtitle,landing,LandingPage,MarketingLanding,leaderboard_subtitle,"Optionally and anonymously sync your local AI token usage to join the global efficiency leaderboard. Benchmark cost efficiency and model rotations with developers worldwide.",,active
+landing.v2.leaderboard.active_developers,landing,LandingPage,MarketingLanding,active_developers,"1,240+ developers actively syncing",,active
+landing.v2.leaderboard.top_badge,landing,LandingPage,MarketingLanding,top_badge,"EFFICIENCY CHAMP",,active
+landing.v2.leaderboard.rank_first,landing,LandingPage,MarketingLanding,rank_first,"NO. 1 GLOBAL",,active
+landing.v2.leaderboard.rank_second,landing,LandingPage,MarketingLanding,rank_second,"NO. 2",,active
+landing.v2.leaderboard.rank_third,landing,LandingPage,MarketingLanding,rank_third,"NO. 3",,active
+landing.v2.leaderboard.synced_tokens,landing,LandingPage,MarketingLanding,synced_tokens,"{{count}} tokens synced",,active
+landing.v2.leaderboard.efficiency,landing,LandingPage,MarketingLanding,efficiency,"Efficiency: {{value}}",,active
+landing.v2.leaderboard.streak_days,landing,LandingPage,MarketingLanding,streak_days,"{{count}} day streak",,active
+landing.v2.leaderboard.view_more,landing,LandingPage,MarketingLanding,view_more,"View full leaderboard",,active

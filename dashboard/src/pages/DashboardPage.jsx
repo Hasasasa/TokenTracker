@@ -479,6 +479,22 @@ export function DashboardPage({
     sharedRange: shareDailyToTrend ? { from, to } : null,
   });
 
+  // Stable useTrendData config handed to the zoom modal so it can hold its OWN
+  // data instance for granularity drill-down (30min/Day/Month) without mutating
+  // the dashboard's period/range state.
+  const trendZoomConfig = useMemo(
+    () => ({
+      baseUrl,
+      accessToken,
+      guestAllowed,
+      cacheKey,
+      timeZone: trendTimeZone,
+      tzOffsetMinutes: trendTzOffsetMinutes,
+      now: mockNow,
+    }),
+    [baseUrl, accessToken, guestAllowed, cacheKey, trendTimeZone, trendTzOffsetMinutes, mockNow],
+  );
+
   const {
     daily: heatmapDaily,
     heatmap,
@@ -1225,6 +1241,7 @@ export function DashboardPage({
       trendRowsForDisplay={trendRowsForDisplay}
       trendFromForDisplay={trendFromForDisplay}
       trendToForDisplay={trendToForDisplay}
+      trendZoomConfig={trendZoomConfig}
       usageFrom={from}
       usageTo={to}
       period={period}

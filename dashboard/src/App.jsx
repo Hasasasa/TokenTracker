@@ -95,6 +95,7 @@ export default function App() {
   const signedIn = isLocalMode || cloudAuthSignedIn;
   const sessionSoftExpired = false;
   const baseUrl = getBackendBaseUrl();
+  const isAuthGateTriggered = !signedIn && !mockEnabled && !isLocalMode;
 
   const authObject = useMemo(() => {
     if (!insforge.enabled || !cloudAuthSignedIn) return null;
@@ -137,6 +138,7 @@ export default function App() {
 
   const showSidebar =
     !publicMode &&
+    !isAuthGateTriggered &&
     (normalizedPath === "/dashboard" ||
       normalizedPath === "/" ||
       isLeaderboardPath ||

@@ -1,6 +1,12 @@
 import React from "react";
 import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The zoom modal pulls in use-trend-data (a .ts hook imported with a .js
+// specifier) which vitest's resolver can't follow the way the Vite build does.
+// The small-card tests never open the modal, so stub it out.
+vi.mock("../TrendMonitorZoomModal", () => ({ TrendMonitorZoomModal: () => null }));
+
 import {
   TrendMonitor,
   computeInterpolatedSeries,
@@ -66,6 +72,34 @@ describe("TrendMonitor", () => {
     expect(previewBar?.style.opacity).toBe("0.35");
     // Predicted heights are clipped to the y-axis max and rendered as a percentage.
     expect(previewBar?.parentElement?.style.height).toMatch(/%$/);
+  });
+
+  it("renders X-axis tick labels only in zoom mode (small card unchanged)", () => {
+    const rows = [
+      { hour: "2026-05-29T14:00:00", billable_total_tokens: 100 },
+      { hour: "2026-05-29T14:30:00", billable_total_tokens: 200 },
+    ];
+
+    const plain = render(<TrendMonitor rows={rows} period="day" showTimeZoneLabel={false} />);
+    expect(plain.container.textContent).not.toContain("14:00");
+
+    const zoomed = render(
+      <TrendMonitor rows={rows} period="day" isZoom showTimeZoneLabel={false} />,
+    );
+    expect(zoomed.container.textContent).toContain("14:00");
+    expect(zoomed.container.textContent).toContain("14:30");
+  });
+
+  it("shows the maximize button only when zoomConfig is provided", () => {
+    const rows = [{ billable_total_tokens: 100 }];
+
+    const without = render(<TrendMonitor rows={rows} showTimeZoneLabel={false} />);
+    expect(without.queryByRole("button")).toBeNull();
+
+    const withCfg = render(
+      <TrendMonitor rows={rows} zoomConfig={{ baseUrl: "http://localhost" }} showTimeZoneLabel={false} />,
+    );
+    expect(withCfg.queryByRole("button")).not.toBeNull();
   });
 });
 

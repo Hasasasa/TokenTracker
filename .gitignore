@@ -82,3 +82,6 @@ Thumbs.db
 # Private launch playbook — never push to remote
 docs/launch/PLAYBOOK.md
 docs/launch/submit-awesome-pr.sh
+
+# Scratch / reference clones (not part of the project)
+scratch/

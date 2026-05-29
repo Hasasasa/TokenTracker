@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { cn } from "../../lib/cn";
@@ -10,6 +10,11 @@ import { useLoginModal } from "../../contexts/LoginModalContext.jsx";
 import { STATUSPAGE_URL } from "../../lib/config";
 import LaserFlow from "./components/LaserFlow.jsx";
 import LightRays from "./components/LightRays.jsx";
+import { LogoCarousel } from "./LogoCarousel.jsx";
+import { SpotlightCard } from "./components/SpotlightCard.jsx";
+import { TiltedCard } from "./components/TiltedCard.jsx";
+import { BorderGlow } from "./components/BorderGlow.jsx";
+import { AGENT_LOGOS } from "./agent-logos.js";
 
 function AppleIcon({ className }) {
   return (
@@ -87,29 +92,8 @@ export function MarketingLanding({
   const { signedIn, loading: authLoading } = useInsforgeAuth();
   const { openLoginModal } = useLoginModal();
 
-  const modelAgentLabels = useMemo(
-    () => ({
-      codex: copy("landing.v2.models.agent.codex"),
-      claude_code: copy("landing.v2.models.agent.claude_code"),
-      cursor: copy("landing.v2.models.agent.cursor"),
-      gemini: copy("landing.v2.models.agent.gemini"),
-      opencode: copy("landing.v2.models.agent.opencode"),
-      openclaw: copy("landing.v2.models.agent.openclaw"),
-    }),
-    [copy],
-  );
-
-  const modelAgents = useMemo(
-    () => [
-      { id: "codex", icon: "/brand-logos/codex.svg" },
-      { id: "claude_code", icon: "/brand-logos/claude-code.svg" },
-      { id: "cursor", icon: "/brand-logos/cursor.svg" },
-      { id: "gemini", icon: "/brand-logos/gemini.svg" },
-      { id: "opencode", icon: "/brand-logos/opencode.svg" },
-      { id: "openclaw", icon: "/brand-logos/openclaw.svg" },
-    ],
-    [],
-  );
+  // Canonical supported-agent list shared with the dashboard auth gate; names
+  // are metadata (React keys + a11y), not rendered text, so no copy entry needed.
 
   const spring = reduceMotion ? { duration: 0 } : undefined;
 
@@ -140,7 +124,7 @@ export function MarketingLanding({
               className="flex items-center gap-3 no-underline outline-none rounded focus-visible:ring-2 focus-visible:ring-oai-brand-500 focus-visible:ring-offset-2 dark:ring-offset-oai-gray-950 transition-opacity hover:opacity-80"
             >
               <img src="/app-icon.png" alt="" width={24} height={24} className="rounded-md" />
-              <span className="text-sm font-semibold tracking-wide text-white uppercase">
+              <span className="text-sm font-semibold tracking-wide text-white uppercase whitespace-nowrap">
                 Token Tracker
               </span>
             </Link>
@@ -152,7 +136,7 @@ export function MarketingLanding({
             {/* Leaderboard 纯文字导航链接 */}
             <Link
               to="/leaderboard"
-              className="text-sm font-medium text-oai-gray-400 hover:text-white transition-colors duration-200 select-none outline-none focus-visible:underline"
+              className="hidden sm:inline text-sm font-medium text-oai-gray-400 hover:text-white transition-colors duration-200 select-none outline-none focus-visible:underline"
             >
               {copy("nav.leaderboard")}
             </Link>
@@ -161,7 +145,7 @@ export function MarketingLanding({
             {(!signedIn && !authLoading) && (
               <Link
                 to={getDashboardEntryPath()}
-                className="text-sm font-medium text-oai-gray-400 hover:text-white transition-colors duration-200 select-none outline-none focus-visible:underline"
+                className="hidden sm:inline text-sm font-medium text-oai-gray-400 hover:text-white transition-colors duration-200 select-none outline-none focus-visible:underline"
               >
                 {copy("landing.v2.cta.primary")}
               </Link>
@@ -323,14 +307,14 @@ export function MarketingLanding({
                     wispDensity={2}
                     flowSpeed={0.28}
                     verticalSizing={2.2}
-                    horizontalSizing={1.22}
+                    horizontalSizing={1.0}
                     fogIntensity={4.0}
                     fogScale={0.1}
                     wispSpeed={18}
-                    wispIntensity={10}
+                    wispIntensity={6}
                     flowStrength={0.12}
                     decay={1.1}
-                    falloffStart={1.1}
+                    falloffStart={0.95}
                     fogFallSpeed={0.5}
                     horizontalBeamOffset={0.22}
                     verticalBeamOffset={0}
@@ -391,87 +375,224 @@ export function MarketingLanding({
 
         <section className="border-y border-oai-gray-900 bg-oai-gray-950/50 py-12 lg:py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-              <p className="text-sm font-semibold uppercase tracking-wider text-oai-gray-400 shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+              <p className="text-sm font-semibold uppercase tracking-wider text-oai-gray-400 shrink-0 md:max-w-[16rem]">
                 {copy("landing.v2.models.title")}
               </p>
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-6 opacity-60 hover:opacity-100 transition-opacity duration-500 grayscale hover:grayscale-0">
-                {modelAgents.map((a) => (
-                  <div key={a.id} className="flex items-center gap-2.5 transition-transform hover:-translate-y-0.5 duration-300">
-                    <img
-                      src={a.icon}
-                      alt=""
-                      width={20}
-                      height={20}
-                      className={`h-5 w-5 object-contain ${a.id === "cursor" ? "dark:invert" : ""}`}
-                      loading="lazy"
-                    />
-                    <span className="text-sm font-medium text-oai-gray-300">
-                      {modelAgentLabels[a.id]}
-                    </span>
-                  </div>
-                ))}
+              <div className="flex justify-center md:justify-end">
+                <LogoCarousel logos={AGENT_LOGOS} columnCount={6} />
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-20 lg:py-32">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24 items-start">
-            <div className="max-w-md">
-              <p className="text-xs font-bold tracking-widest uppercase text-oai-brand-500 mb-4">
+        <section className="border-t border-oai-gray-900 py-20 lg:py-32 relative bg-oai-gray-950">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8 items-start">
+              
+              {/* Left Column: Geek Text & Call To Action */}
+              <div className="lg:col-span-5 space-y-6 text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-oai-gray-800 bg-[#080808] text-[10px] font-bold tracking-widest uppercase text-oai-gray-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-oai-brand-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-oai-brand-500"></span>
+                  </span>
+                  {copy("landing.v2.leaderboard.kicker")}
+                </div>
+                
+                <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl text-balance leading-tight">
+                  {copy("landing.v2.leaderboard.title")}
+                </h2>
+                
+                <p className="text-base leading-relaxed text-oai-gray-400">
+                  {copy("landing.v2.leaderboard.subtitle")}
+                </p>
+                
+                <div className="pt-4">
+                  <Link
+                    to="/leaderboard"
+                    className="inline-flex h-9 items-center justify-center rounded-[8px] bg-white px-6 text-xs font-bold text-oai-gray-950 hover:bg-oai-gray-100 transition-all duration-200 shadow-sm active:scale-[0.98] select-none whitespace-nowrap"
+                  >
+                    {copy("landing.v2.leaderboard.view_more")}
+                  </Link>
+                </div>
+              </div>
+              
+              {/* Right Column: Unified IDE Console-style Leaderboard Board - perfectly stretched for edge justification */}
+              <div className="lg:col-span-7 w-full">
+                <TiltedCard rotateMax={4} className="w-full">
+                  <BorderGlow
+                    edgeSensitivity={30}
+                    glowColor="247 100 74"
+                    backgroundColor="#09090b"
+                    borderRadius={16}
+                    glowRadius={35}
+                    glowIntensity={1.0}
+                    coneSpread={25}
+                    animated={false}
+                    colors={['#8a7aff', '#f472b6', '#38bdf8']}
+                    className="w-full"
+                  >
+                    {/* Panel Header */}
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-oai-gray-800/80 bg-white/[0.025] backdrop-blur-xs text-[10px] tracking-widest text-oai-gray-500 font-bold uppercase select-none">
+                      <span>Community Rankings (Global)</span>
+                      <span className="flex items-center gap-1.5 font-mono text-oai-brand-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-oai-brand-500 animate-pulse" />
+                        Realtime
+                      </span>
+                    </div>
+
+                    {/* Table rows list - perfectly justified */}
+                    <div className="divide-y divide-oai-gray-800/60">
+                      
+                      {/* Row 1 - VOLT */}
+                      <div className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className="font-mono text-xs font-bold text-yellow-500 w-4">01</span>
+                          <span className="text-oai-gray-700 font-mono text-xs select-none">›</span>
+                          <span className="font-bold text-white text-sm tracking-wide truncate">VOLT</span>
+                          <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded border border-oai-gray-800 bg-oai-gray-950 text-oai-gray-500 font-mono scale-90">
+                            CHAMP
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-6 shrink-0">
+                          {/* Micro spark progress bar */}
+                          <div className="hidden sm:block w-16 h-[2px] bg-oai-gray-950 rounded-full overflow-hidden">
+                            <div className="h-full bg-yellow-500 w-[98.4%]" />
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-white font-mono leading-none">1,420,850</div>
+                            <div className="text-[10px] text-yellow-500 font-semibold font-mono mt-1">98.4% Eff.</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 2 - ALEX */}
+                      <div className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className="font-mono text-xs font-bold text-oai-gray-500 w-4">02</span>
+                          <span className="text-oai-gray-700 font-mono text-xs select-none">›</span>
+                          <span className="font-semibold text-oai-gray-200 text-sm tracking-wide truncate">ALEX</span>
+                        </div>
+                        <div className="flex items-center gap-6 shrink-0">
+                          <div className="hidden sm:block w-16 h-[2px] bg-oai-gray-950 rounded-full overflow-hidden">
+                            <div className="h-full bg-oai-gray-600 w-[92.1%]" />
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-oai-gray-300 font-mono leading-none">924,110</div>
+                            <div className="text-[10px] text-oai-gray-400 font-medium font-mono mt-1">92.1% Eff.</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Row 3 - CHARLIE */}
+                      <div className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors group">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className="font-mono text-xs font-bold text-oai-gray-500 w-4">03</span>
+                          <span className="text-oai-gray-700 font-mono text-xs select-none">›</span>
+                          <span className="font-semibold text-oai-gray-200 text-sm tracking-wide truncate">CHARLIE</span>
+                        </div>
+                        <div className="flex items-center gap-6 shrink-0">
+                          <div className="hidden sm:block w-16 h-[2px] bg-oai-gray-950 rounded-full overflow-hidden">
+                            <div className="h-full bg-oai-gray-600 w-[89.5%]" />
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-oai-gray-300 font-mono leading-none">740,560</div>
+                            <div className="text-[10px] text-oai-gray-400 font-medium font-mono mt-1">89.5% Eff.</div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* IDE-style bottom Status Bar */}
+                    <div className="px-5 py-2.5 border-t border-oai-gray-800/80 bg-black/[0.15] flex items-center justify-between text-[9px] font-mono tracking-widest text-oai-gray-600 select-none">
+                      <span>SYSTEM: // LEADERBOARD_PREVIEW_FEED</span>
+                      <span>42 DAY ACTIVE STREAK</span>
+                    </div>
+                  </BorderGlow>
+                </TiltedCard>
+              </div>
+              
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 lg:py-32 border-t border-oai-gray-900/60 bg-[#0c0c0e]">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-16 items-start">
+            
+            {/* Left Column - Purified to reduce height */}
+            <div className="lg:col-span-5 max-w-md text-left">
+              <p className="text-xs font-bold tracking-widest uppercase text-oai-brand-500">
                 {copy("landing.v2.compare.kicker")}
               </p>
-              <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl text-balance">
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl text-balance leading-tight">
                 {copy("landing.v2.compare.title")}
               </h2>
-              <p className="mt-6 text-lg leading-relaxed text-oai-gray-400">
+              <p className="mt-6 text-sm leading-relaxed text-oai-gray-400">
                 {copy("landing.v2.compare.subtitle")}
-              </p>
-              <p className="mt-6 text-base leading-relaxed text-oai-gray-500">
-                {copy("landing.v2.distill.body")}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-white border-b border-oai-gray-800 pb-3">
-                  {copy("landing.v2.compare.with.title")}
-                </h3>
-                <ul className="space-y-3 text-sm text-oai-gray-400">
-                  <li className="flex gap-2">
-                    <span className="text-oai-brand-500 shrink-0">✦</span>
-                    <span>{copy("landing.v2.compare.with.p1")}</span>
+            {/* Right Column - Enriched with 4 items & footer commands to raise height */}
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-10 w-full">
+              
+              {/* With Column - Terminal Diff Style */}
+              <div className="space-y-5">
+                <div className="border-t border-oai-gray-800/80 pt-4">
+                  <h3 className="text-xs font-mono font-bold tracking-widest text-white flex items-center gap-2 select-none">
+                    <span className="text-oai-brand-400">[+]</span>
+                    {copy("landing.v2.compare.with.title")}
+                  </h3>
+                </div>
+                <ul className="space-y-4 mt-5 text-xs font-mono text-oai-gray-300">
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-brand-400 shrink-0 font-bold select-none">+</span>
+                    <span className="leading-relaxed">{copy("landing.v2.compare.with.p1")}</span>
                   </li>
-                  <li className="flex gap-2">
-                    <span className="text-oai-brand-500 shrink-0">✦</span>
-                    <span>{copy("landing.v2.compare.with.p2")}</span>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-brand-400 shrink-0 font-bold select-none">+</span>
+                    <span className="leading-relaxed">{copy("landing.v2.compare.with.p2")}</span>
                   </li>
-                  <li className="flex gap-2">
-                    <span className="text-oai-brand-500 shrink-0">✦</span>
-                    <span>{copy("landing.v2.compare.with.p3")}</span>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-brand-400 shrink-0 font-bold select-none">+</span>
+                    <span className="leading-relaxed">{copy("landing.v2.compare.with.p3")}</span>
                   </li>
-                </ul>
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-oai-gray-500 border-b border-oai-gray-800/50 pb-3">
-                  {copy("landing.v2.compare.without.title")}
-                </h3>
-                <ul className="space-y-3 text-sm text-oai-gray-500">
-                  <li className="flex gap-2">
-                    <span className="opacity-50 shrink-0">✕</span>
-                    <span>{copy("landing.v2.compare.without.p1")}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="opacity-50 shrink-0">✕</span>
-                    <span>{copy("landing.v2.compare.without.p2")}</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="opacity-50 shrink-0">✕</span>
-                    <span>{copy("landing.v2.compare.without.p3")}</span>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-brand-400 shrink-0 font-bold select-none">+</span>
+                    <span className="leading-relaxed">{copy("landing.v2.compare.with.p4")}</span>
                   </li>
                 </ul>
               </div>
+
+              {/* Without Column - Terminal Diff Style */}
+              <div className="space-y-5">
+                <div className="border-t border-oai-gray-800/80 pt-4">
+                  <h3 className="text-xs font-mono font-bold tracking-widest text-oai-gray-500 flex items-center gap-2 select-none">
+                    <span className="text-oai-gray-600">[-]</span>
+                    {copy("landing.v2.compare.without.title")}
+                  </h3>
+                </div>
+                <ul className="space-y-4 mt-5 text-xs font-mono text-oai-gray-500">
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-gray-600 shrink-0 font-bold select-none">-</span>
+                    <span className="leading-relaxed text-oai-gray-400">{copy("landing.v2.compare.without.p1")}</span>
+                  </li>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-gray-600 shrink-0 font-bold select-none">-</span>
+                    <span className="leading-relaxed text-oai-gray-400">{copy("landing.v2.compare.without.p2")}</span>
+                  </li>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-gray-600 shrink-0 font-bold select-none">-</span>
+                    <span className="leading-relaxed text-oai-gray-400">{copy("landing.v2.compare.without.p3")}</span>
+                  </li>
+                  <li className="flex gap-2.5 items-start">
+                    <span className="text-oai-gray-600 shrink-0 font-bold select-none">-</span>
+                    <span className="leading-relaxed text-oai-gray-400">{copy("landing.v2.compare.without.p4")}</span>
+                  </li>
+                </ul>
+              </div>
+
             </div>
           </div>
         </section>
