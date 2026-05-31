@@ -45,6 +45,19 @@ $zipPath = Join-Path $tmp $zipName
 
 Write-Host "Downloading Node.js v$NodeVersion (win-x64)..."
 Invoke-WebRequest -Uri $url -OutFile $zipPath
+
+# Verify the archive against Node.js's official SHASUMS256.txt before trusting it.
+$sumsPath = Join-Path $tmp 'SHASUMS256.txt'
+Invoke-WebRequest -Uri "https://nodejs.org/dist/v$NodeVersion/SHASUMS256.txt" -OutFile $sumsPath
+$expectedHash = (Select-String -Path $sumsPath -Pattern ([regex]::Escape($zipName)) |
+    Select-Object -First 1).Line.Split(' ')[0]
+if (-not $expectedHash) { Write-Error "No checksum found for $zipName in SHASUMS256.txt" }
+$actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
+if ($actualHash -ne $expectedHash.ToUpper()) {
+    Write-Error "Checksum mismatch for $zipName (expected $expectedHash, got $actualHash)"
+}
+Write-Host "Checksum verified (SHA-256)"
+
 Expand-Archive -Path $zipPath -DestinationPath $tmp -Force
 $nodeExe = Join-Path $tmp "node-v$NodeVersion-win-x64\node.exe"
 if (-not (Test-Path $nodeExe)) { Write-Error "node.exe not found in archive" }

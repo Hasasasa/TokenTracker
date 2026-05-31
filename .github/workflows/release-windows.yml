@@ -19,6 +19,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # This job uploads assets via `gh` (GH_TOKEN), never authenticated git —
+          # so don't persist the checkout token into local git config.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -34,18 +38,20 @@ jobs:
       # advertised version disagrees with the embedded runtime — keep them locked.
       - name: Verify version
         shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           $pkg = node -p "require('./package.json').version"
-          if ($pkg -ne "${{ inputs.version }}") {
-            Write-Host "::error::package.json version ($pkg) does not match input (${{ inputs.version }})"
+          if ($pkg -ne $env:VERSION) {
+            Write-Host "::error::package.json version ($pkg) does not match input ($env:VERSION)"
             exit 1
           }
           $csproj = Get-Content TokenTrackerWin/TokenTrackerWin.csproj -Raw
-          if ($csproj -notmatch "<Version>${{ inputs.version }}</Version>") {
-            Write-Host "::error::TokenTrackerWin.csproj <Version> does not match ${{ inputs.version }}"
+          if ($csproj -notmatch "<Version>$([regex]::Escape($env:VERSION))</Version>") {
+            Write-Host "::error::TokenTrackerWin.csproj <Version> does not match $env:VERSION"
             exit 1
           }
-          Write-Host "Version OK: ${{ inputs.version }}"
+          Write-Host "Version OK: $env:VERSION"
 
       # 1. Build dashboard. InsForge URL + anon key are public client-side values
       # (shipped in every dashboard bundle) but MUST be present at build time or
@@ -96,13 +102,17 @@ jobs:
       # 5. Package the publish folder into a portable zip release asset.
       - name: Package zip
         shell: pwsh
-        run: Compress-Archive -Path TokenTrackerWin/publish/* -DestinationPath "TokenTracker-win-x64-v${{ inputs.version }}.zip" -CompressionLevel Optimal
+        env:
+          VERSION: ${{ inputs.version }}
+        run: Compress-Archive -Path TokenTrackerWin/publish/* -DestinationPath "TokenTracker-win-x64-v$env:VERSION.zip" -CompressionLevel Optimal
 
       # 6. Build the per-user installer (setup.exe) with Inno Setup. windows-latest
       # ships Inno Setup 6; fall back to installing it via choco if the path moves.
       # Output: TokenTrackerWin/installer/Output/TokenTracker-Setup-v<version>.exe
       - name: Build installer (Inno Setup)
         shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) {
@@ -111,8 +121,8 @@ jobs:
             $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           }
           if (-not (Test-Path $iscc)) { Write-Host "::error::ISCC.exe not found after install"; exit 1 }
-          & $iscc "/DMyAppVersion=${{ inputs.version }}" TokenTrackerWin\installer\TokenTracker.iss
-          $setup = "TokenTrackerWin/installer/Output/TokenTracker-Setup-v${{ inputs.version }}.exe"
+          & $iscc "/DMyAppVersion=$env:VERSION" TokenTrackerWin\installer\TokenTracker.iss
+          $setup = "TokenTrackerWin/installer/Output/TokenTracker-Setup-v$env:VERSION.exe"
           if (-not (Test-Path $setup)) { Write-Host "::error::installer not produced at $setup"; exit 1 }
           Write-Host "Installer built: $setup"
 
@@ -124,10 +134,11 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
         run: |
-          $tag = "v${{ inputs.version }}"
-          $zip = "TokenTracker-win-x64-v${{ inputs.version }}.zip"
-          $setup = "TokenTrackerWin/installer/Output/TokenTracker-Setup-v${{ inputs.version }}.exe"
+          $tag = "v$env:VERSION"
+          $zip = "TokenTracker-win-x64-v$env:VERSION.zip"
+          $setup = "TokenTrackerWin/installer/Output/TokenTracker-Setup-v$env:VERSION.exe"
           gh release view $tag 2>$null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag $zip $setup --clobber

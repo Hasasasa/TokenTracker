@@ -353,12 +353,25 @@ internal sealed class ServerManager : IDisposable
         var token = _healthCts.Token;
         _ = Task.Run(async () =>
         {
+            // Debounce: a single transient probe failure (GC pause, brief load) should not
+            // flip the server to Failed — that stops the sync timer and pops a warning
+            // balloon. Only declare failure after several consecutive misses.
+            const int failureThreshold = 3;
+            var consecutiveFailures = 0;
             while (!token.IsCancellationRequested)
             {
                 try { await Task.Delay(TimeSpan.FromSeconds(Constants.HealthCheckIntervalSeconds), token); }
                 catch (TaskCanceledException) { break; }
                 if (token.IsCancellationRequested) break;
-                SetStatus(await CheckHealthAsync() ? ServerStatus.Running : ServerStatus.Failed);
+                if (await CheckHealthAsync())
+                {
+                    consecutiveFailures = 0;
+                    SetStatus(ServerStatus.Running);
+                }
+                else if (++consecutiveFailures >= failureThreshold)
+                {
+                    SetStatus(ServerStatus.Failed);
+                }
             }
         }, token);
     }

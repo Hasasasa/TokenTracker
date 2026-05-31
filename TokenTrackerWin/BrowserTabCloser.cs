@@ -107,9 +107,15 @@ internal static class BrowserTabCloser
         SetForegroundWindow(hwnd);
         Thread.Sleep(180);
 
+        // SetForegroundWindow can silently fail (Windows foreground lock). Only drive the
+        // keyboard if the target browser actually owns focus — otherwise Ctrl+L/Ctrl+C and
+        // especially Ctrl+W would land on whatever unrelated window currently has focus.
+        if (GetForegroundWindow() != hwnd) return false;
+
         const int maxTabsToScan = 24;
         for (var i = 0; i < maxTabsToScan; i++)
         {
+            if (GetForegroundWindow() != hwnd) return false;
             var address = CopyAddressBarText();
             if (IsAuthCallbackUrl(address, baseUri))
             {
@@ -178,4 +184,7 @@ internal static class BrowserTabCloser
 
     [DllImport("user32.dll")]
     private static extern bool IsIconic(nint hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
 }

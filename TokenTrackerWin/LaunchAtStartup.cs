@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Win32;
 
 namespace TokenTrackerWin;
@@ -26,10 +27,33 @@ internal static class LaunchAtStartup
             using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: false);
             var value = key?.GetValue(Constants.StartupRegistryValueName) as string;
             if (string.IsNullOrEmpty(value)) return false;
-            // Only consider it "on" if the registered command still points at this exe
-            // (the value also carries the StartupArgument, so match on the path itself).
-            return value.IndexOf(ExecutablePath, StringComparison.OrdinalIgnoreCase) >= 0;
+            // Only "on" if the registered command's executable is exactly this exe. Extract
+            // the path (the value also carries StartupArgument) and compare it precisely —
+            // a substring match would false-positive on any command containing this path.
+            var registeredPath = ExtractExecutablePath(value);
+            return registeredPath is not null && PathsEqual(registeredPath, ExecutablePath);
         }
+    }
+
+    /// <summary>Pull the executable out of a Run-key command (handles a quoted path with
+    /// trailing arguments, or an unquoted path up to the first space).</summary>
+    private static string? ExtractExecutablePath(string command)
+    {
+        command = command.Trim();
+        if (command.Length == 0) return null;
+        if (command[0] == '"')
+        {
+            var close = command.IndexOf('"', 1);
+            return close > 1 ? command[1..close] : null;
+        }
+        var space = command.IndexOf(' ');
+        return space >= 0 ? command[..space] : command;
+    }
+
+    private static bool PathsEqual(string a, string b)
+    {
+        try { return string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase); }
+        catch { return string.Equals(a, b, StringComparison.OrdinalIgnoreCase); }
     }
 
     public static void Enable()

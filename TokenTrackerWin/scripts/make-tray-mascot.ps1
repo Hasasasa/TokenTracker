@@ -18,7 +18,7 @@ $AssetsDir = Join-Path $WinProjDir 'assets'
 $Src = Join-Path $RepoRoot 'TokenTrackerBar\TokenTrackerBar\Assets.xcassets\MenuBarIcon.imageset\menubar_36.png'
 New-Item -ItemType Directory -Force -Path $AssetsDir | Out-Null
 
-if (-not (Test-Path $Src)) { Write-Error "Source mascot not found: $Src" }
+if (-not (Test-Path $Src)) { throw "Source mascot not found: $Src" }
 
 $source = [System.Drawing.Bitmap]::FromFile($Src)
 
