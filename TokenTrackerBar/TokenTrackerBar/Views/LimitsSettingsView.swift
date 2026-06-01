@@ -14,6 +14,27 @@ struct LimitsSettingsView: View {
                 .padding(.top, 10)
                 .padding(.bottom, 6)
 
+            HStack(spacing: 10) {
+                Text(Strings.limitDisplayModeLabel)
+                    .font(.system(.body, design: .default))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Picker("", selection: $store.displayMode) {
+                    Text(Strings.limitDisplayModeUsed).tag(LimitDisplayMode.used)
+                    Text(Strings.limitDisplayModeRemaining).tag(LimitDisplayMode.remaining)
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.small)
+                .labelsHidden()
+                .frame(width: 132)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+
+            Divider()
+                .opacity(0.35)
+                .padding(.bottom, 2)
+
             VStack(spacing: 0) {
                 ForEach(store.providerOrder, id: \.self) { id in
                     providerRow(id: id)

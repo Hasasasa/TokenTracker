@@ -77,6 +77,7 @@ export function LimitsPage() {
                 copilot={usageLimits?.copilot}
                 order={prefs.order}
                 visibility={prefs.visibility}
+                displayMode={prefs.displayMode}
               />
             </>
           )}

@@ -88,6 +88,11 @@ enum Strings {
     static var syncingUsageData: String { t("Syncing usage data…", "正在同步使用数据…", "正在同步使用資料…", "使用データを同期中…", "사용 데이터 동기화 중…") }
     static var syncingFirstLaunchHint: String { t("First launch may take a moment", "首次启动可能需要一点时间", "首次啟動可能需要一點時間", "初回起動は少し時間がかかる場合があります", "첫 실행은 잠시 시간이 걸릴 수 있습니다") }
     static var limitsDisplayTitle: String { t("Limit Display", "限额显示", "限額顯示", "上限の表示", "한도 표시") }
+    static var limitDisplayModeLabel: String { t("Usage", "用量", "用量", "使用量", "사용량") }
+    static var limitDisplayModeUsed: String { t("Used", "已用", "已用", "使用済み", "사용됨") }
+    static var limitDisplayModeRemaining: String { t("Remaining", "剩余", "剩餘", "残り", "남음") }
+    static var limitSuffixUsed: String { t("used", "已用", "已用", "使用済み", "사용됨") }
+    static var limitSuffixRemaining: String { t("remaining", "剩余", "剩餘", "残り", "남음") }
 
     static var menuSyncNow: String { t("Sync Now", "立即同步", "立即同步", "今すぐ同期", "지금 동기화") }
     static var menuCheckForUpdates: String { t("Check for Updates…", "检查更新…", "檢查更新…", "アップデートを確認…", "업데이트 확인…") }
@@ -269,8 +274,8 @@ enum Strings {
         )
     }
 
-    static func limitAccessibility(toolName: String, label: String, percent: Int, reset: String?) -> String {
-        let base = t("\(toolName) \(label) limit, \(percent)%", "\(toolName) \(label) 限额，\(percent)%", "\(toolName) \(label) 限額，\(percent)%", "\(toolName) \(label) 上限、\(percent)%", "\(toolName) \(label) 한도, \(percent)%")
+    static func limitAccessibility(toolName: String, label: String, percent: Int, reset: String?, modeSuffix: String) -> String {
+        let base = t("\(toolName) \(label) limit, \(percent)% \(modeSuffix)", "\(toolName) \(label) 限额，\(percent)% \(modeSuffix)", "\(toolName) \(label) 限額，\(percent)% \(modeSuffix)", "\(toolName) \(label) 上限、\(percent)% \(modeSuffix)", "\(toolName) \(label) 한도, \(percent)% \(modeSuffix)")
         guard let reset else { return base }
         return t("\(base), resets in \(reset)", "\(base)，\(reset) 后重置", "\(base)，\(reset) 後重置", "\(base)、\(reset) 後にリセット", "\(base), \(reset) 후 초기화")
     }

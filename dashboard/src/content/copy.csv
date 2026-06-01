@@ -333,6 +333,9 @@ nav.aside_label,shared,*,Sidebar,aside_label,"Main navigation",,active
 nav.nav_label,shared,*,Sidebar,nav_label,"Primary",,active
 limits.page.subtitle,ui,LimitsPage,LimitsPage,subtitle,"Rate limits and quota usage across your AI tools.",,active
 limits.settings.toggle_visible,ui,LimitsPage,LimitsSettingsPanel,toggle_visible,"Toggle visibility",,active
+limits.settings.display_mode_label,ui,LimitsPage,LimitsSettingsPanel,display_mode_label,"Usage",,active
+limits.settings.display_mode_used,ui,LimitsPage,LimitsSettingsPanel,display_mode_used,"Used",,active
+limits.settings.display_mode_remaining,ui,LimitsPage,LimitsSettingsPanel,display_mode_remaining,"Remaining",,active
 limits.page.openSettings,ui,LimitsPage,LimitsPage,open_settings,"Display settings",,active
 nav.group.general,shared,*,Sidebar,group_general,"General",,active
 nav.group.tools,shared,*,Sidebar,group_tools,"Tools",,active
@@ -514,6 +517,7 @@ usage.overview.model_details_aria,ui,DashboardPage,UsageOverview,model_details_a
 usage.overview.antigravity_notice_title,ui,DashboardPage,UsageOverview,antigravity_notice_title,"Estimated tokens",,active
 usage.overview.antigravity_notice_body,ui,DashboardPage,UsageOverview,antigravity_notice_body,"Antigravity transcripts don't record real usage numbers. These counts are estimated from text length (~4 chars/token) and don't reflect Gemini's prompt-cache discount, so treat them as an upper bound, not a billing figure.",,active
 limits.panel.title,ui,LimitsPage,UsageLimitsPanel,title,"Usage Limits",,active
+limits.panel.mode_separator,ui,LimitsPage,UsageLimitsPanel,title_separator," · ",,active
 limits.label.cursor_plan,ui,LimitsPage,UsageLimitsPanel,cursor_plan,"Plan",,active
 limits.label.cursor_auto,ui,LimitsPage,UsageLimitsPanel,cursor_auto,"Auto",,active
 limits.label.cursor_api,ui,LimitsPage,UsageLimitsPanel,cursor_api,"API",,active

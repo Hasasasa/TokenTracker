@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-30T08:16:01.808Z",
+  "generatedAt": "2026-06-01T05:17:10.057Z",
   "root": "dashboard/src",
   "rules": {
     "colors": "hex/rgb(a) literals",
@@ -298,8 +298,10 @@
     },
     "dashboard/src/ui/dashboard/components/TrendMonitorZoomModal.jsx": {
       "colors": 1,
-      "rawText": 0,
-      "rawTextTokens": []
+      "rawText": 1,
+      "rawTextTokens": [
+        "(outside #root) mount and composite in the renderer // but are NOT presented on-screen, so the modal looked like it \"didn't open\". // The 3D heatmap modal renders inline for the same reason and works. macOS // WKWebView / browsers are unaffected either way. return ("
+      ]
     },
     "dashboard/src/ui/dashboard/components/UsageLimitsPanel.jsx": {
       "colors": 0,
@@ -314,14 +316,7 @@
         "); case \"kiro\": return (",
         "0 && rounded === 0 ? \"",
         "0 ? groups :",
-        "renderProviderGroup(id, dataById[id])) .filter(Boolean); return ("
-      ]
-    },
-    "dashboard/src/ui/dashboard/components/UsageLimitsPanel.test.jsx": {
-      "colors": 0,
-      "rawText": 1,
-      "rawTextTokens": [
-        ", ); expect(screen.getByText(\"Kimi\")).toBeInTheDocument(); expect(screen.getByText(\"Weekly\")).toBeInTheDocument(); expect(screen.getByText(\"5h\")).toBeInTheDocument(); expect(screen.getByText(\"Total\")).toBeInTheDocument(); expect(screen.getByText(\"Parallel: 20\")).toBeInTheDocument(); expect(screen.getByText(\"64%\")).toBeInTheDocument(); expect(screen.getByText(\"4%\")).toBeInTheDocument(); expect(screen.getByText(\"1%\")).toBeInTheDocument(); rerender("
+        "renderProviderGroup(id, dataById[id], effectiveMode)) .filter(Boolean); return ("
       ]
     },
     "dashboard/src/ui/dashboard/components/UsageOverview.jsx": {

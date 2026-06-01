@@ -49,6 +49,16 @@ final class NativeBridge {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.pushSettings() }
             .store(in: &cancellables)
+
+        // Mirror local changes to the limits display mode (e.g. toggled in
+        // the menu-bar popover) so the embedded dashboard reflects the new
+        // rendering without a page reload.
+        LimitsSettingsStore.shared.$displayMode
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.pushSettings() }
+            .store(in: &cancellables)
     }
 
     /// Compact "configured && error==nil" snapshot per provider — collapses
@@ -142,6 +152,7 @@ final class NativeBridge {
             "currency": UserDefaults.standard.string(forKey: "MenuBarCurrency") ?? "USD",
             "currencySymbol": UserDefaults.standard.string(forKey: "MenuBarCurrencySymbol") ?? "$",
             "exchangeRate": UserDefaults.standard.object(forKey: "MenuBarExchangeRate") as? Double ?? 1.0,
+            "limitsDisplayMode": LimitsSettingsStore.shared.displayMode.bridgeKey,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
               let json = String(data: data, encoding: .utf8) else { return }
@@ -206,6 +217,12 @@ final class NativeBridge {
                 UserDefaults.standard.set(rate, forKey: "MenuBarExchangeRate")
                 NotificationCenter.default.post(name: .nativeSettingsChanged, object: nil)
                 WidgetCenter.shared.reloadAllTimelines()
+            }
+        case "limitsDisplayMode":
+            if let raw = value as? String, let parsed = LimitDisplayMode(rawValue: raw),
+               parsed != LimitsSettingsStore.shared.displayMode {
+                LimitsSettingsStore.shared.displayMode = parsed
+                NotificationCenter.default.post(name: .nativeSettingsChanged, object: nil)
             }
         default:
             break

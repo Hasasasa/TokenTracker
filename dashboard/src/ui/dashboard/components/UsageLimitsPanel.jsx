@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card } from "../../components";
 import { FadeIn } from "../../foundation/FadeIn.jsx";
 import { copy } from "../../../lib/copy";
+import { LIMIT_DISPLAY_MODES } from "../../../hooks/use-limits-display-prefs.js";
 
 function formatReset(isoOrUnix) {
   if (!isoOrUnix) return null;
@@ -16,29 +17,36 @@ function formatReset(isoOrUnix) {
   return `${Math.floor(h / 24)}d`;
 }
 
-function barColor(pct) {
+/**
+ * In "used" mode a high percentage is bad (lots of quota burned).
+ * In "remaining" mode a high percentage is good (lots of quota left), so the
+ * red/amber thresholds are mirrored: low remaining = red.
+ */
+function barColor(displayPct, mode) {
+  const pct = mode === LIMIT_DISPLAY_MODES.REMAINING ? 100 - displayPct : displayPct;
   if (pct >= 90) return "bg-red-500";
   if (pct >= 70) return "bg-amber-500";
   return "bg-emerald-500";
 }
 
-function LimitBar({ label, pct, reset }) {
-  const raw = Math.max(0, Math.min(100, Number(pct) || 0));
-  const rounded = Math.round(raw);
-  // Sub-1% usage still matters (e.g. team pool); keep bar/text from collapsing to 0%.
-  const widthPct = raw > 0 && rounded === 0 ? Math.max(raw, 0.35) : raw;
+function LimitBar({ label, pct, reset, mode = LIMIT_DISPLAY_MODES.USED }) {
+  const rawUsed = Math.max(0, Math.min(100, Number(pct) || 0));
+  const displayPct = mode === LIMIT_DISPLAY_MODES.REMAINING ? 100 - rawUsed : rawUsed;
+  const rounded = Math.round(displayPct);
+  // Sub-1% still matters (e.g. team pool); keep bar/text from collapsing to 0%.
+  const widthPct = displayPct > 0 && rounded === 0 ? Math.max(displayPct, 0.35) : displayPct;
   const labelPct =
-    raw > 0 && rounded === 0 ? "<1" : String(rounded);
+    displayPct > 0 && rounded === 0 ? "<1" : String(rounded);
   return (
     <div className="flex items-center gap-2">
       <span className="text-[11px] text-oai-gray-500 dark:text-oai-gray-400 w-12 shrink-0">{label}</span>
       <div className="flex-1 bg-oai-gray-100 dark:bg-oai-gray-700/50 rounded-full h-1.5 overflow-hidden">
         <div
-          className={`${barColor(rounded)} rounded-full h-full transition-[width] duration-500 ease-out`}
-          style={{ width: `${widthPct}%`, minWidth: raw > 0 ? "3px" : 0 }}
+          className={`${barColor(displayPct, mode)} rounded-full h-full transition-[width] duration-500 ease-out`}
+          style={{ width: `${widthPct}%`, minWidth: displayPct > 0 ? "3px" : 0 }}
         />
       </div>
-      <span className="text-[11px] tabular-nums text-oai-gray-500 dark:text-oai-gray-400 w-[30px] text-right shrink-0">
+      <span className="text-[11px] tabular-nums text-oai-gray-500 dark:text-oai-gray-400 w-9 text-right shrink-0 whitespace-nowrap">
         {labelPct}%
       </span>
       {reset ? (
@@ -90,7 +98,7 @@ function StatusLine({ children, tone = "neutral" }) {
   return <div className={`text-[11px] leading-snug ${color}`}>{children}</div>;
 }
 
-function renderProviderGroup(id, data) {
+function renderProviderGroup(id, data, mode) {
   const meta = PROVIDER_META[id];
   if (!meta) return null;
   if (!data?.configured) {
@@ -112,44 +120,44 @@ function renderProviderGroup(id, data) {
     case "claude":
       return (
         <ToolGroup key="claude" name={meta.name} icon={meta.icon}>
-          {data.five_hour ? <LimitBar label="5h" pct={data.five_hour.utilization} reset={formatReset(data.five_hour.resets_at)} /> : null}
-          {data.seven_day ? <LimitBar label="7d" pct={data.seven_day.utilization} reset={formatReset(data.seven_day.resets_at)} /> : null}
-          {data.seven_day_opus ? <LimitBar label="Opus" pct={data.seven_day_opus.utilization} reset={formatReset(data.seven_day_opus.resets_at)} /> : null}
+          {data.five_hour ? <LimitBar label="5h" pct={data.five_hour.utilization} reset={formatReset(data.five_hour.resets_at)} mode={mode} /> : null}
+          {data.seven_day ? <LimitBar label="7d" pct={data.seven_day.utilization} reset={formatReset(data.seven_day.resets_at)} mode={mode} /> : null}
+          {data.seven_day_opus ? <LimitBar label="Opus" pct={data.seven_day_opus.utilization} reset={formatReset(data.seven_day_opus.resets_at)} mode={mode} /> : null}
           {!data.five_hour && !data.seven_day && !data.seven_day_opus ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "codex":
       return (
         <ToolGroup key="codex" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label="5h" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="7d" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label="5h" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label="7d" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "cursor":
       return (
         <ToolGroup key="cursor" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label={copy("limits.label.cursor_plan")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label={copy("limits.label.cursor_auto")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
-          {data.tertiary_window ? <LimitBar label={copy("limits.label.cursor_api")} pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.cursor_plan")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.cursor_auto")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
+          {data.tertiary_window ? <LimitBar label={copy("limits.label.cursor_api")} pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window && !data.tertiary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "gemini":
       return (
         <ToolGroup key="gemini" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label="Pro" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="Flash" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
-          {data.tertiary_window ? <LimitBar label="Lite" pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label="Pro" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label="Flash" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
+          {data.tertiary_window ? <LimitBar label="Lite" pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window && !data.tertiary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "kimi":
       return (
         <ToolGroup key="kimi" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label={copy("limits.label.kimi_weekly")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label={copy("limits.label.kimi_5h")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
-          {data.tertiary_window ? <LimitBar label={copy("limits.label.kimi_total")} pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.kimi_weekly")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.kimi_5h")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
+          {data.tertiary_window ? <LimitBar label={copy("limits.label.kimi_total")} pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} mode={mode} /> : null}
           {data.parallel_limit ? <StatusLine>{copy("limits.label.kimi_parallel", { count: data.parallel_limit })}</StatusLine> : null}
           {!data.primary_window && !data.secondary_window && !data.tertiary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
@@ -157,25 +165,25 @@ function renderProviderGroup(id, data) {
     case "kiro":
       return (
         <ToolGroup key="kiro" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label={copy("limits.label.kiro_month")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label={copy("limits.label.kiro_bonus")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.kiro_month")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.kiro_bonus")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "antigravity":
       return (
         <ToolGroup key="antigravity" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label="Claude" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label="G Pro" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
-          {data.tertiary_window ? <LimitBar label="Flash" pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label="Claude" pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label="G Pro" pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
+          {data.tertiary_window ? <LimitBar label="Flash" pct={data.tertiary_window.used_percent} reset={formatReset(data.tertiary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window && !data.tertiary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
         </ToolGroup>
       );
     case "copilot":
       return (
         <ToolGroup key="copilot" name={meta.name} icon={meta.icon}>
-          {data.primary_window ? <LimitBar label={copy("limits.label.copilot_premium")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} /> : null}
-          {data.secondary_window ? <LimitBar label={copy("limits.label.copilot_chat")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} /> : null}
+          {data.primary_window ? <LimitBar label={copy("limits.label.copilot_premium")} pct={data.primary_window.used_percent} reset={formatReset(data.primary_window.reset_at)} mode={mode} /> : null}
+          {data.secondary_window ? <LimitBar label={copy("limits.label.copilot_chat")} pct={data.secondary_window.used_percent} reset={formatReset(data.secondary_window.reset_at)} mode={mode} /> : null}
           {!data.primary_window && !data.secondary_window ? <StatusLine>{copy("limits.status.no_data")}</StatusLine> : null}
           {data.otel_has_files || data.otel_enabled ? null : <CopilotOtelHint defaultDir={data.otel_default_dir} />}
         </ToolGroup>
@@ -220,20 +228,28 @@ function CopilotOtelHint({ defaultDir }) {
   );
 }
 
-export function UsageLimitsPanel({ claude, codex, cursor, gemini, kimi, kiro, antigravity, copilot, order, visibility }) {
+export function UsageLimitsPanel({ claude, codex, cursor, gemini, kimi, kiro, antigravity, copilot, order, visibility, displayMode }) {
   const dataById = { claude, codex, cursor, gemini, kimi, kiro, antigravity, copilot };
   const effectiveOrder = Array.isArray(order) && order.length > 0 ? order : DEFAULT_ORDER;
+  const effectiveMode = displayMode === LIMIT_DISPLAY_MODES.REMAINING
+    ? LIMIT_DISPLAY_MODES.REMAINING
+    : LIMIT_DISPLAY_MODES.USED;
+  const modeLabel = effectiveMode === LIMIT_DISPLAY_MODES.REMAINING
+    ? copy("limits.settings.display_mode_remaining")
+    : copy("limits.settings.display_mode_used");
 
   const groups = effectiveOrder
     .filter((id) => !visibility || visibility[id] !== false)
-    .map((id) => renderProviderGroup(id, dataById[id]))
+    .map((id) => renderProviderGroup(id, dataById[id], effectiveMode))
     .filter(Boolean);
 
   return (
     <FadeIn delay={0.15}>
       <Card>
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">{copy("limits.panel.title")}</h3>
+          <h3 className="text-sm font-medium text-oai-gray-500 dark:text-oai-gray-300 uppercase tracking-wide">
+            {copy("limits.panel.title")}{copy("limits.panel.mode_separator")}{modeLabel}
+          </h3>
           {groups.length > 0 ? groups : <StatusLine>{copy("limits.status.all_hidden")}</StatusLine>}
         </div>
       </Card>

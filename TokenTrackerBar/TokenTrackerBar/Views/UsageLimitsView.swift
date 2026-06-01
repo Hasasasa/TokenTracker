@@ -27,7 +27,7 @@ struct UsageLimitsView: View {
             let visibleGroups = buildVisibleGroups(limits)
 
             VStack(alignment: .leading, spacing: 8) {
-                SectionHeader(title: Strings.usageLimitsTitle) {
+                SectionHeader(title: "\(Strings.usageLimitsTitle) · \(displayModeTitle)") {
                     SettingsGearButton(isPresented: $showSettings) {
                         LimitsSettingsView(store: settings)
                     }
@@ -238,13 +238,17 @@ struct UsageLimitsView: View {
     // MARK: - Row
 
     private func limitRow(label: String, pct: Double, reset: String?, toolName: String) -> some View {
-        let clamped = min(max(pct, 0), 100)
-        let fraction = clamped / 100.0
+        let rawClamped = min(max(pct, 0), 100)
+        let displayValue = settings.displayMode == .remaining ? (100 - rawClamped) : rawClamped
+        let fraction = displayValue / 100.0
+        // Bar color thresholds are mirrored in remaining mode: low remaining is bad.
+        let colorFraction = settings.displayMode == .remaining ? (1 - fraction) : fraction
         let accessibilityLabel = Strings.limitAccessibility(
             toolName: toolName,
             label: label,
-            percent: Int(clamped.rounded()),
-            reset: reset
+            percent: Int(displayValue.rounded()),
+            reset: reset,
+            modeSuffix: settings.displayMode == .remaining ? Strings.limitSuffixRemaining : Strings.limitSuffixUsed
         )
 
         return HStack(spacing: 5) {
@@ -259,16 +263,17 @@ struct UsageLimitsView: View {
                         .fill(Color.limitTrack)
                     if fraction > 0 {
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.limitBar(fraction: fraction))
+                            .fill(Color.limitBar(fraction: colorFraction))
                             .frame(width: max(3, geo.size.width * min(fraction, 1.0)))
                     }
                 }
             }
             .frame(height: 5)
 
-            Text("\(Int(clamped.rounded()))%")
+            Text(displayPercentLabel(displayValue))
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
                 .frame(width: 34, alignment: .trailing)
 
             if let reset {
@@ -280,6 +285,15 @@ struct UsageLimitsView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var displayModeTitle: String {
+        settings.displayMode == .remaining ? Strings.limitDisplayModeRemaining : Strings.limitDisplayModeUsed
+    }
+
+    private func displayPercentLabel(_ value: Double) -> String {
+        let rounded = Int(value.rounded())
+        return "\(rounded)%"
     }
 
     // MARK: - Helpers

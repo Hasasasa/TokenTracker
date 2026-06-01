@@ -514,7 +514,9 @@ final class StatusBarController: NSObject {
     }
 
     private func formatLimitPercent(_ value: Double) -> String {
-        "\(Int(min(max(value, 0), 100).rounded()))%"
+        let raw = min(max(value, 0), 100)
+        let displayed = LimitsSettingsStore.shared.displayMode == .remaining ? (100 - raw) : raw
+        return "\(Int(displayed.rounded()))%"
     }
 
     private func formatResetTime(iso: String?) -> String? {
@@ -554,7 +556,9 @@ final class StatusBarController: NSObject {
     }
 
     private func formatIntPercentWithReset(_ usedPercent: Int, resetEpoch: Int?) -> String {
-        let pct = "\(usedPercent)%"
+        let clamped = min(max(usedPercent, 0), 100)
+        let displayed = LimitsSettingsStore.shared.displayMode == .remaining ? (100 - clamped) : clamped
+        let pct = "\(displayed)%"
         guard let reset = formatResetTime(epoch: resetEpoch) else { return pct }
         return "\(pct) · \(reset)"
     }

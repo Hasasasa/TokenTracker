@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  isNativeEmbed,
+  onNativeSettings,
+  requestNativeSettings,
+  setNativeSetting,
+} from "../lib/native-bridge";
 
 /**
  * Display preferences for the Usage Limits panel.
  *
  * Mirrors the native macOS app's LimitsSettingsStore (order + visibility per provider),
- * persisted in localStorage. Dashboard and native storage are intentionally separate
- * since WKWebView's localStorage is isolated from UserDefaults.
+ * persisted in localStorage. The display mode additionally syncs through NativeBridge
+ * inside the macOS app so the dashboard, menu bar, and popover render the same mode.
  */
 
 const ALL_LIMIT_PROVIDERS = [
@@ -43,6 +49,15 @@ export const LIMIT_PROVIDER_ICONS = {
 
 const ORDER_KEY = "tt.limits.providerOrder";
 const VISIBILITY_KEY = "tt.limits.providerVisibility";
+const DISPLAY_MODE_KEY = "tt.limits.displayMode";
+const NATIVE_DISPLAY_MODE_KEY = "limitsDisplayMode";
+
+export const LIMIT_DISPLAY_MODES = Object.freeze({
+  USED: "used",
+  REMAINING: "remaining",
+});
+
+const VALID_DISPLAY_MODES = new Set(Object.values(LIMIT_DISPLAY_MODES));
 
 function readOrder() {
   if (typeof window === "undefined") return [...ALL_LIMIT_PROVIDERS];
@@ -80,9 +95,28 @@ function readVisibility() {
   }
 }
 
+function readDisplayMode() {
+  if (typeof window === "undefined") return LIMIT_DISPLAY_MODES.USED;
+  try {
+    const raw = window.localStorage.getItem(DISPLAY_MODE_KEY);
+    return VALID_DISPLAY_MODES.has(raw) ? raw : LIMIT_DISPLAY_MODES.USED;
+  } catch {
+    return LIMIT_DISPLAY_MODES.USED;
+  }
+}
+
 export function useLimitsDisplayPrefs() {
   const [order, setOrder] = useState(readOrder);
   const [visibility, setVisibility] = useState(readVisibility);
+  const [displayMode, setDisplayModeState] = useState(readDisplayMode);
+
+  const setDisplayMode = useCallback((mode) => {
+    if (!VALID_DISPLAY_MODES.has(mode)) return;
+    setDisplayModeState(mode);
+    if (isNativeEmbed()) {
+      setNativeSetting(NATIVE_DISPLAY_MODE_KEY, mode);
+    }
+  }, []);
 
   // Persist on change
   useEffect(() => {
@@ -99,12 +133,34 @@ export function useLimitsDisplayPrefs() {
     } catch { /* ignore */ }
   }, [visibility]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(DISPLAY_MODE_KEY, displayMode);
+    } catch { /* ignore */ }
+  }, [displayMode]);
+
+  // Native app sync: native pushes the canonical UserDefaults-backed value,
+  // while explicit dashboard changes are sent through setDisplayMode().
+  useEffect(() => {
+    if (!isNativeEmbed()) return undefined;
+    const unsubscribe = onNativeSettings((detail) => {
+      const next = detail?.[NATIVE_DISPLAY_MODE_KEY];
+      if (VALID_DISPLAY_MODES.has(next)) {
+        setDisplayModeState(next);
+      }
+    });
+    requestNativeSettings();
+    return unsubscribe;
+  }, []);
+
   // Cross-tab sync
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onStorage = (e) => {
       if (e.key === ORDER_KEY) setOrder(readOrder());
       if (e.key === VISIBILITY_KEY) setVisibility(readVisibility());
+      if (e.key === DISPLAY_MODE_KEY) setDisplayModeState(readDisplayMode());
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -154,7 +210,8 @@ export function useLimitsDisplayPrefs() {
   const reset = useCallback(() => {
     setOrder([...ALL_LIMIT_PROVIDERS]);
     setVisibility(Object.fromEntries(ALL_LIMIT_PROVIDERS.map((id) => [id, true])));
-  }, []);
+    setDisplayMode(LIMIT_DISPLAY_MODES.USED);
+  }, [setDisplayMode]);
 
   // Derived: visible providers in user's order
   const visibleOrdered = useMemo(
@@ -162,5 +219,16 @@ export function useLimitsDisplayPrefs() {
     [order, visibility],
   );
 
-  return { order, visibility, visibleOrdered, toggle, moveUp, moveDown, moveToward, reset };
+  return {
+    order,
+    visibility,
+    displayMode,
+    setDisplayMode,
+    visibleOrdered,
+    toggle,
+    moveUp,
+    moveDown,
+    moveToward,
+    reset,
+  };
 }

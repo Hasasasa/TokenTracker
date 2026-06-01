@@ -2,10 +2,23 @@ import React from "react";
 import { LimitsSettingsPanel } from "../components/LimitsSettingsPanel.jsx";
 import { AccountSection } from "../components/settings/AccountSection.jsx";
 import { AppearanceSection } from "../components/settings/AppearanceSection.jsx";
-import { SectionCard } from "../components/settings/Controls.jsx";
+import { SectionCard, SegmentedControl } from "../components/settings/Controls.jsx";
 import { MenuBarSection, NativeAppFooter } from "../components/settings/MenuBarSection.jsx";
-import { useLimitsDisplayPrefs } from "../hooks/use-limits-display-prefs.js";
+import { LIMIT_DISPLAY_MODES, useLimitsDisplayPrefs } from "../hooks/use-limits-display-prefs.js";
 import { copy } from "../lib/copy";
+
+function LimitsDisplayModeControl({ prefs }) {
+  return (
+    <SegmentedControl
+      options={[
+        { value: LIMIT_DISPLAY_MODES.USED, label: copy("limits.settings.display_mode_used") },
+        { value: LIMIT_DISPLAY_MODES.REMAINING, label: copy("limits.settings.display_mode_remaining") },
+      ]}
+      value={prefs.displayMode}
+      onChange={prefs.setDisplayMode}
+    />
+  );
+}
 
 export function SettingsPage() {
   const limitsPrefs = useLimitsDisplayPrefs();
@@ -27,7 +40,10 @@ export function SettingsPage() {
             <AppearanceSection />
             <MenuBarSection />
             <AccountSection />
-            <SectionCard title={copy("settings.section.limits")}>
+            <SectionCard
+              title={copy("settings.section.limits")}
+              action={<LimitsDisplayModeControl prefs={limitsPrefs} />}
+            >
               <LimitsSettingsPanel prefs={limitsPrefs} />
             </SectionCard>
           </div>

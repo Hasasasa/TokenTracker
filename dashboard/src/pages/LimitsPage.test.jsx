@@ -8,21 +8,19 @@ import {
 import { LimitsPage } from "./LimitsPage.jsx";
 
 const useUsageLimitsMock = vi.hoisted(() => vi.fn());
+const useLimitsDisplayPrefsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../hooks/use-usage-limits", () => ({
   useUsageLimits: useUsageLimitsMock,
 }));
 
 vi.mock("../hooks/use-limits-display-prefs.js", () => ({
-  useLimitsDisplayPrefs: () => ({
-    order: ["kimi"],
-    visibility: { kimi: true },
-  }),
+  useLimitsDisplayPrefs: useLimitsDisplayPrefsMock,
 }));
 
 vi.mock("../ui/dashboard/components/UsageLimitsPanel.jsx", () => ({
-  UsageLimitsPanel: ({ kimi, codex }) => (
-    <div data-testid="limits-panel">
+  UsageLimitsPanel: ({ kimi, codex, displayMode }) => (
+    <div data-testid="limits-panel" data-display-mode={displayMode ?? "absent"}>
       {kimi?.configured ? "Kimi connected" : "Kimi missing"}
       {codex?.configured ? " Codex connected" : ""}
     </div>
@@ -57,6 +55,12 @@ describe("LimitsPage", () => {
       data: apiLimits,
       error: null,
       isLoading: false,
+    }));
+    useLimitsDisplayPrefsMock.mockReset();
+    useLimitsDisplayPrefsMock.mockImplementation(() => ({
+      order: ["kimi"],
+      visibility: { kimi: true },
+      displayMode: "used",
     }));
   });
 
@@ -107,5 +111,24 @@ describe("LimitsPage", () => {
       initialRefresh: true,
       publishToPreloadCache: true,
     });
+  });
+
+  it("forwards the active displayMode to the limits panel", () => {
+    useLimitsDisplayPrefsMock.mockImplementation(() => ({
+      order: ["kimi"],
+      visibility: { kimi: true },
+      displayMode: "remaining",
+    }));
+
+    render(
+      <MemoryRouter>
+        <LimitsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("limits-panel")).toHaveAttribute(
+      "data-display-mode",
+      "remaining",
+    );
   });
 });
